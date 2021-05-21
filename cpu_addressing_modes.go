@@ -111,3 +111,25 @@ func (c *cpu6502) izy() uint8 {
 	}
 	return 0
 }
+
+// Relative addressing mode
+func (c *cpu6502) rel() uint8 {
+	c.addrRel = uint16(c.read(c.pc))
+	c.pc++
+	if c.addrRel&0x80 == 0x80 {
+		c.addrRel |= 0xFF00
+	}
+	return 0
+}
+
+// Absolute addressing mode
+func (c *cpu6502) abs() uint8 {
+	lo := uint16(c.read(c.pc))
+	c.pc++
+
+	hi := uint16(c.read(c.pc)) << 8
+	c.pc++
+
+	c.addrAbs = hi + lo
+	return 0
+}
