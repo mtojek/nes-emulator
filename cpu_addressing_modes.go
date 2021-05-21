@@ -1,5 +1,22 @@
 package main
 
+const (
+	addressingModeIMP = "IMP"
+	addressingModeIMM = "IMM"
+	addressingModeZP0 = "ZP0"
+	addressingModeZPX = "ZPX"
+	addressingModeZPY = "ZPY"
+	addressingModeABX = "ABX"
+	addressingModeABY = "ABY"
+	addressingModeIND = "IND"
+	addressingModeIZX = "IZX"
+	addressingModeIZY = "IZY"
+	addressingModeREL = "REL"
+	addressingModeABS = "ABS"
+)
+
+type addressingModeFunc func() uint8
+
 // Implied addressing mode
 func (c *cpu6502) imp() uint8 {
 	c.fetched = c.a

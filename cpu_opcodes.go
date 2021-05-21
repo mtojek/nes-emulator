@@ -1,15 +1,21 @@
 package main
 
-var opcodes = map[uint8]instruction{}
-
 type instruction struct {
 	name   string
 	cycles uint8
 
-	addressingMode addressingModeFunc
-	operate        operateFunc
+	addressingMode string
+	addressingModeDo   addressingModeFunc
+
+	operation string
+	operationDo   operateFunc
 }
 
-type addressingModeFunc func() uint8
-
 type operateFunc func() uint8
+
+func (c *cpu6502) fetch() uint8 {
+	if c.lookupOpcodes[c.opcode].addressingMode == addressingModeIMP {
+		c.fetched = c.read(c.addrAbs)
+	}
+	return c.fetched
+}
