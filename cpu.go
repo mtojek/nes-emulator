@@ -13,8 +13,8 @@ type cpu6502 struct {
 	fetched uint8
 	addrAbs uint16
 	addrRel uint16
-	opcode uint8
-	cycles uint8
+	opcode  uint8
+	cycles  uint8
 }
 
 const (
@@ -36,7 +36,7 @@ func createCPU(b readableWriteable) *cpu6502 {
 
 func (c *cpu6502) clock() {
 	if c.cycles == 0 {
-		c.opcode = c.readOpcode(c.pc)
+		c.opcode = c.read(c.pc)
 		c.pc++
 
 		ins := opcodes[c.opcode]
@@ -49,7 +49,7 @@ func (c *cpu6502) clock() {
 	c.cycles--
 }
 
-func (c *cpu6502) readOpcode(addr uint16) uint8 {
+func (c *cpu6502) read(addr uint16) uint8 {
 	return c.bus.read(addr, true)
 }
 
