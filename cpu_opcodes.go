@@ -216,6 +216,25 @@ func (c *cpu6502) clv() uint8 {
 	return 0
 }
 
+// Bitwise Logic XOR
+func (c *cpu6502) eor() uint8 {
+	c.fetch()
+	c.a = c.a ^ c.fetched
+	c.setFlagZ(c.a)
+	c.setFlagN(c.a)
+	return 1
+}
+
+// Increment Value at Memory Location
+func (c *cpu6502) inc() uint8 {
+	c.fetch()
+	t := uint16(c.fetched) + 1
+	c.bus.write(c.addrAbs, uint8(t))
+	c.setFlagZ(uint8(t))
+	c.setFlagN(uint8(t))
+	return 0
+}
+
 // Jump To Sub-Routine
 func (c *cpu6502) jsr() uint8 {
 	c.pc--
@@ -226,6 +245,48 @@ func (c *cpu6502) jsr() uint8 {
 	c.sp--
 
 	c.pc = c.addrAbs
+	return 0
+}
+
+// Load The Accumulator
+func (c *cpu6502) lda() uint8 {
+	c.fetch()
+	c.a = c.fetched
+	c.setFlagZ(c.a)
+	c.setFlagN(c.a)
+	return 1
+}
+
+// Load The X Register
+func (c *cpu6502) ldx() uint8 {
+	c.fetch()
+	c.x = c.fetched
+	c.setFlagZ(c.x)
+	c.setFlagN(c.x)
+	return 1
+}
+
+// Load The Y Register
+func (c *cpu6502) ldy() uint8 {
+	c.fetch()
+	c.y = c.fetched
+	c.setFlagZ(c.y)
+	c.setFlagN(c.y)
+	return 1
+}
+
+// Logical Shift Right
+func (c *cpu6502) lsr() uint8 {
+	c.fetch()
+	c.setFlag(flagC, c.fetched&flagC == 1)
+	t := c.fetched >> 1
+	c.setFlagZ(t)
+	c.setFlagN(t)
+	if c.lookupOpcodes[c.opcode].addressing.name == lblAddressingModeIMP {
+		c.a = t
+	} else {
+		c.bus.write(c.addrAbs, t)
+	}
 	return 0
 }
 
@@ -263,11 +324,19 @@ func (c *cpu6502) php() uint8 {
 	return 0
 }
 
+// Pop Status Register off Stack
+func (c *cpu6502) plp() uint8 {
+	c.sp++
+	c.status = c.bus.read(0x0100+uint16(c.sp), true)
+	c.setFlag(flagU, true)
+	return 0
+}
+
 // Rotate Left
 func (c *cpu6502) rol() uint8 {
 	c.fetch()
-	t := uint16(c.fetched) << 1 | uint16(c.getFlag(flagC))
-	c.setFlag(flagC, t & 0xFF00 > 0)
+	t := uint16(c.fetched)<<1 | uint16(c.getFlag(flagC))
+	c.setFlag(flagC, t&0xFF00 > 0)
 	c.setFlagZ(uint8(t))
 	c.setFlagN(uint8(t))
 	if c.lookupOpcodes[c.opcode].addressing.name == lblAddressingModeIMP {
@@ -276,6 +345,33 @@ func (c *cpu6502) rol() uint8 {
 		c.bus.write(c.addrAbs, uint8(t))
 	}
 	return 0
+}
+
+// Rotate Right
+func (c *cpu6502) ror() uint8 {
+	c.fetch()
+	t := uint16(c.getFlag(flagC))<<7 | uint16(c.fetched)>>1
+	c.setFlag(flagC, c.fetched&flagC == flagC)
+	c.setFlagZ(uint8(t))
+	c.setFlagN(uint8(t))
+	if c.lookupOpcodes[c.opcode].addressing.name == "IMP" {
+		c.a = uint8(t)
+	} else {
+		c.bus.write(c.addrAbs, uint8(t))
+	}
+	return 0
+}
+
+func (c *cpu6502) sbc() uint8 {
+	c.fetch()
+	value := uint16(c.fetched) ^ 0x00FF
+	t := uint16(c.a) + value + uint16(c.getFlag(flagC))
+	c.setFlag(flagC, t > 255)
+	c.setFlag(flagV, (uint16(c.a)^uint16(c.fetched))&0x0080 == 0 && (uint16(c.a)^t)&0x0080 != 0)
+	c.setFlagZ(uint8(t))
+	c.setFlagN(uint8(t))
+	c.a = uint8(t)
+	return 1
 }
 
 // Unknown instruction
