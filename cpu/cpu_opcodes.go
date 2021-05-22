@@ -110,13 +110,7 @@ func (c *CPU6502) asl() uint8 {
 // Branch if Carry Clear
 func (c *CPU6502) bcc() uint8 {
 	if c.getFlag(flagC) == 0 {
-		c.cycles++
-		c.addrAbs = c.pc + c.addrRel
-
-		if (c.addrAbs & 0xFF00) != (c.pc & 0xFF00) {
-			c.cycles++
-		}
-		c.pc = c.addrAbs
+		c.branch()
 	}
 	return 0
 }
@@ -124,13 +118,7 @@ func (c *CPU6502) bcc() uint8 {
 // Branch if Carry Set
 func (c *CPU6502) bcs() uint8 {
 	if c.getFlag(flagC) == 1 {
-		c.cycles++
-		c.addrAbs = c.pc + c.addrRel
-
-		if (c.addrAbs & 0xFF00) != (c.pc & 0xFF00) {
-			c.cycles++
-		}
-		c.pc = c.addrAbs
+		c.branch()
 	}
 	return 0
 }
@@ -138,41 +126,7 @@ func (c *CPU6502) bcs() uint8 {
 // Branch if Equal
 func (c *CPU6502) beq() uint8 {
 	if c.getFlag(flagZ) == 1 {
-		c.cycles++
-		c.addrAbs = c.pc + c.addrRel
-
-		if (c.addrAbs & 0xFF00) != (c.pc & 0xFF00) {
-			c.cycles++
-		}
-		c.pc = c.addrAbs
-	}
-	return 0
-}
-
-// Branch if Not Equal
-func (c *CPU6502) bne() uint8 {
-	if c.getFlag(flagZ) == 0 {
-		c.cycles++
-		c.addrAbs = c.pc + c.addrRel
-
-		if (c.addrAbs & 0xFF00) != (c.pc & 0xFF00) {
-			c.cycles++
-		}
-		c.pc = c.addrAbs
-	}
-	return 0
-}
-
-// Branch if Overflow Set
-func (c *CPU6502) bvs() uint8 {
-	if c.getFlag(flagV) == 1 {
-		c.cycles++
-		c.addrAbs = c.pc + c.addrRel
-
-		if (c.addrAbs & 0xFF00) != (c.pc & 0xFF00) {
-			c.cycles++
-		}
-		c.pc = c.addrAbs
+		c.branch()
 	}
 	return 0
 }
@@ -187,16 +141,26 @@ func (c *CPU6502) bit() uint8 {
 	return 0
 }
 
+// Branch if Not Equal
+func (c *CPU6502) bne() uint8 {
+	if c.getFlag(flagZ) == 0 {
+		c.branch()
+	}
+	return 0
+}
+
+// Branch if Overflow Set
+func (c *CPU6502) bvs() uint8 {
+	if c.getFlag(flagV) == 1 {
+		c.branch()
+	}
+	return 0
+}
+
 // Branch if Negative
 func (c *CPU6502) bmi() uint8 {
 	if c.getFlag(flagN) == 1 {
-		c.cycles++
-		c.addrAbs = c.pc + c.addrRel
-
-		if (c.addrAbs & 0xFF00) != (c.pc & 0xFF00) {
-			c.cycles++
-		}
-		c.pc = c.addrAbs
+		c.branch()
 	}
 	return 0
 }
@@ -204,13 +168,7 @@ func (c *CPU6502) bmi() uint8 {
 // Branch if Positive
 func (c *CPU6502) bpl() uint8 {
 	if c.getFlag(flagN) == 0 {
-		c.cycles++
-		c.addrAbs = c.pc + c.addrRel
-
-		if (c.addrAbs & 0xFF00) != (c.pc & 0xFF00) {
-			c.cycles++
-		}
-		c.pc = c.addrAbs
+		c.branch()
 	}
 	return 0
 }
@@ -237,13 +195,7 @@ func (c *CPU6502) brk() uint8 {
 // Branch if Overflow Clear
 func (c *CPU6502) bvc() uint8 {
 	if c.getFlag(flagV) == 0 {
-		c.cycles++
-		c.addrAbs = c.pc + c.addrRel
-
-		if (c.addrAbs & 0xFF00) != (c.pc & 0xFF00) {
-			c.cycles++
-		}
-		c.pc = c.addrAbs
+		c.branch()
 	}
 	return 0
 }
@@ -635,4 +587,14 @@ func (c *CPU6502) tya() uint8 {
 // Unknown instruction
 func (c *CPU6502) xxx() uint8 {
 	return 0
+}
+
+func (c *CPU6502) branch() {
+	c.cycles++
+	c.addrAbs = c.pc + c.addrRel
+
+	if (c.addrAbs & 0xFF00) != (c.pc & 0xFF00) {
+		c.cycles++
+	}
+	c.pc = c.addrAbs
 }
