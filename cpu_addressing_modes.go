@@ -1,18 +1,18 @@
 package main
 
 const (
-	lblAddressingModeIMP = "IMP"
-	lblAddressingModeIMM = "IMM"
-	lblAddressingModeZP0 = "ZP0"
-	lblAddressingModeZPX = "ZPX"
-	lblAddressingModeZPY = "ZPY"
+	lblAddressingModeABS = "ABS"
 	lblAddressingModeABX = "ABX"
 	lblAddressingModeABY = "ABY"
+	lblAddressingModeIMM = "IMM"
+	lblAddressingModeIMP = "IMP"
 	lblAddressingModeIND = "IND"
 	lblAddressingModeIZX = "IZX"
 	lblAddressingModeIZY = "IZY"
 	lblAddressingModeREL = "REL"
-	lblAddressingModeABS = "ABS"
+	lblAddressingModeZP0 = "ZP0"
+	lblAddressingModeZPX = "ZPX"
+	lblAddressingModeZPY = "ZPY"
 )
 
 type addressingMode struct {

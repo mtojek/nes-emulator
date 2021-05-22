@@ -71,6 +71,7 @@ type instruction struct {
 
 type operateFunc func() uint8
 
+// Bitwise logic AND
 func (c *cpu6502) and() uint8 {
 	c.fetchOpcode()
 	c.a = c.a & c.fetched
@@ -79,6 +80,7 @@ func (c *cpu6502) and() uint8 {
 	return 1
 }
 
+// Unknown instruction
 func (c *cpu6502) xxx() uint8 {
 	return 0
 }
