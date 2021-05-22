@@ -1,19 +1,24 @@
 package main
 
 const (
-	addressingModeIMP = "IMP"
-	addressingModeIMM = "IMM"
-	addressingModeZP0 = "ZP0"
-	addressingModeZPX = "ZPX"
-	addressingModeZPY = "ZPY"
-	addressingModeABX = "ABX"
-	addressingModeABY = "ABY"
-	addressingModeIND = "IND"
-	addressingModeIZX = "IZX"
-	addressingModeIZY = "IZY"
-	addressingModeREL = "REL"
-	addressingModeABS = "ABS"
+	lblAddressingModeIMP = "IMP"
+	lblAddressingModeIMM = "IMM"
+	lblAddressingModeZP0 = "ZP0"
+	lblAddressingModeZPX = "ZPX"
+	lblAddressingModeZPY = "ZPY"
+	lblAddressingModeABX = "ABX"
+	lblAddressingModeABY = "ABY"
+	lblAddressingModeIND = "IND"
+	lblAddressingModeIZX = "IZX"
+	lblAddressingModeIZY = "IZY"
+	lblAddressingModeREL = "REL"
+	lblAddressingModeABS = "ABS"
 )
+
+type addressingMode struct {
+	name string
+	do   addressingModeFunc
+}
 
 type addressingModeFunc func() uint8
 
