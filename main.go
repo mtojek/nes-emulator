@@ -1,10 +1,16 @@
 package main
 
+import (
+	"github.com/mtojek/nes-emulator/bus"
+	"github.com/mtojek/nes-emulator/cpu"
+	"github.com/mtojek/nes-emulator/ram"
+)
+
 func main() {
-	var b bus
+	var b bus.Bus
 
-	r := createRAM()
-	b.connect(0x0000, 0xFFFF, r)
+	r := ram.Create()
+	b.Connect(0x0000, 0xFFFF, r)
 
-	createCPU(&b)
+	cpu.Create(&b)
 }

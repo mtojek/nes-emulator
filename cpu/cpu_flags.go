@@ -1,4 +1,4 @@
-package main
+package cpu
 
 const (
 	flagC = uint8(1) << 0 // Carry Bit
@@ -11,22 +11,22 @@ const (
 	flagN = uint8(1) << 7 // Negative
 )
 
-func (c *cpu6502) getFlag(f uint8) uint8 {
+func (c *CPU6502) getFlag(f uint8) uint8 {
 	if (c.status & f) > 0 {
 		return 1
 	}
 	return 0
 }
 
-func (c *cpu6502) setFlagN(value uint8) {
+func (c *CPU6502) setFlagN(value uint8) {
 	c.setFlag(flagN, (value&flagN) == flagN)
 }
 
-func (c *cpu6502) setFlagZ(value uint8) {
+func (c *CPU6502) setFlagZ(value uint8) {
 	c.setFlag(flagZ, value == 0x00)
 }
 
-func (c *cpu6502) setFlag(f uint8, value bool) {
+func (c *CPU6502) setFlag(f uint8, value bool) {
 	if value {
 		c.status |= f
 		return

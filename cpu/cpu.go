@@ -1,6 +1,8 @@
-package main
+package cpu
 
-type cpu6502 struct {
+import "github.com/mtojek/nes-emulator/bus"
+
+type CPU6502 struct {
 	a      uint8  // Accumulator Register
 	x      uint8  // X Register
 	y      uint8  // Y Register
@@ -8,7 +10,7 @@ type cpu6502 struct {
 	pc     uint16 // Program Counter
 	status uint8  // Status Register
 
-	bus readableWriteable
+	bus bus.ReadableWriteable
 
 	fetched uint8
 	addrAbs uint16
@@ -20,15 +22,31 @@ type cpu6502 struct {
 	lookupOpcodes []instruction
 }
 
-func createCPU(b readableWriteable) *cpu6502 {
-	c := &cpu6502{
+func Create(b bus.ReadableWriteable) *CPU6502 {
+	c := &CPU6502{
 		bus: b,
 	}
 	c.setupInstructions()
+	c.Reset()
 	return c
 }
 
-func (c *cpu6502) clock() {
+
+func (c *CPU6502) Reset() {
+	c.addrAbs = 0xFFFC
+	c.pc = uint16(c.read(c.addrAbs+1))<<8 | uint16(c.read(c.addrAbs))
+	c.a = 0
+	c.x = 0
+	c.y = 0
+	c.sp = 0xFD
+	c.status = 0 | flagU
+	c.addrRel = 0
+	c.addrAbs = 0
+	c.fetched = 0
+	c.cycles = 8
+}
+
+func (c *CPU6502) Clock() {
 	if c.cycles == 0 {
 		c.opcode = c.read(c.pc)
 		c.pc++
@@ -42,28 +60,18 @@ func (c *cpu6502) clock() {
 	c.cycles--
 }
 
-func (c *cpu6502) read(addr uint16) uint8 {
-	return c.bus.read(addr, true)
+func (c *CPU6502) read(addr uint16) uint8 {
+	return c.bus.Read(addr, true)
 }
 
-func (c *cpu6502) fetch() uint8 {
+func (c *CPU6502) write(addr uint16, data uint8) {
+	c.bus.Write(addr, data)
+}
+
+func (c *CPU6502) fetch() uint8 {
 	ins := c.lookupOpcodes[c.opcode]
 	if ins.addressing.name != lblAddressingModeIMP {
 		c.fetched = c.read(c.addrAbs)
 	}
 	return c.fetched
-}
-
-func (c *cpu6502) reset() {
-	c.addrAbs = 0xFFFC
-	c.pc = uint16(c.read(c.addrAbs+1))<<8 | uint16(c.read(c.addrAbs))
-	c.a = 0
-	c.x = 0
-	c.y = 0
-	c.sp = 0xFD
-	c.status = 0 | flagU
-	c.addrRel = 0
-	c.addrAbs = 0
-	c.fetched = 0
-	c.cycles = 8
 }

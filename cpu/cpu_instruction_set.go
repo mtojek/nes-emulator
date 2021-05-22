@@ -1,6 +1,6 @@
-package main
+package cpu
 
-func (c *cpu6502) setupInstructions() {
+func (c *CPU6502) setupInstructions() {
 	// Configure addressing modes
 	abs := addressingMode{lblAddressingModeABS, c.abs}
 	abx := addressingMode{lblAddressingModeABX, c.abx}
@@ -15,7 +15,7 @@ func (c *cpu6502) setupInstructions() {
 	zpx := addressingMode{lblAddressingModeZPX, c.zpx}
 	zpy := addressingMode{lblAddressingModeZPY, c.zpy}
 
-	// Configure instructions
+	// Configure instructions (order is important)
 	c.lookupOpcodes = []instruction{
 		{lblOpcodeBRK, c.brk, imm, 7},
 		{lblOpcodeORA, c.ora, izx, 6},

@@ -1,7 +1,10 @@
-package main
+package cpu_test
 
 import (
 	"encoding/hex"
+	"github.com/mtojek/nes-emulator/bus"
+	"github.com/mtojek/nes-emulator/cpu"
+	"github.com/mtojek/nes-emulator/ram"
 	"strings"
 	"testing"
 
@@ -37,41 +40,40 @@ A2 0A 8E 00 00 A2 03 8E
 
 func TestCPU_BasicCode(t *testing.T) {
 	// given
-	var b bus
+	var b bus.Bus
 
-	r := createRAM()
-	b.connect(0x0000, 0xFFFF, r)
+	r := ram.Create()
+	b.Connect(0x0000, 0xFFFF, r)
 	loadIntoRAM(t, r, standardCodeLocation, basicCode)
 	setResetVector(r, standardCodeLocation)
 
-	c := createCPU(&b)
-	c.reset()
+	c := cpu.Create(&b)
 
 	// when
 	for i := 0; i < 1000; i++ {
-		c.clock()
+		c.Clock()
 	}
-	b.print(0x0000, 0x00FF)
-	b.print(standardCodeLocation, standardCodeLocation+0x00FF)
+	b.Print(0x0000, 0x00FF)
+	b.Print(standardCodeLocation, standardCodeLocation+0x00FF)
 
 	// then
-	require.Equal(t, r.memory[0x0000], uint8(0x0A))
-	require.Equal(t, r.memory[0x0001], uint8(0x03))
-	require.Equal(t, r.memory[0x0002], uint8(0x1E))
+	require.Equal(t, r.Read(0x0000, true), uint8(0x0A))
+	require.Equal(t, r.Read(0x0001, true), uint8(0x03))
+	require.Equal(t, r.Read(0x0002, true), uint8(0x1E))
 }
 
-func loadIntoRAM(t *testing.T, ram writeable, offset uint16, code string) {
+func loadIntoRAM(t *testing.T, ram bus.Writeable, offset uint16, code string) {
 	code = strings.ReplaceAll(code, " ", "")
 	code = strings.ReplaceAll(code, "\n", "")
 	decoded, err := hex.DecodeString(code)
 	require.NoError(t, err, "can't decode machine code")
 
 	for i := uint16(0); i < uint16(len(decoded)); i++ {
-		ram.write(offset+i, decoded[i])
+		ram.Write(offset+i, decoded[i])
 	}
 }
 
-func setResetVector(ram writeable, offset uint16) {
-	ram.write(0xFFFC, uint8(offset))
-	ram.write(0xFFFD, uint8(offset>>8))
+func setResetVector(ram bus.Writeable, offset uint16) {
+	ram.Write(0xFFFC, uint8(offset))
+	ram.Write(0xFFFD, uint8(offset>>8))
 }
