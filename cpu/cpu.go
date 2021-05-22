@@ -1,6 +1,8 @@
 package cpu
 
-import "github.com/mtojek/nes-emulator/bus"
+import (
+	"github.com/mtojek/nes-emulator/bus"
+)
 
 type CPU6502 struct {
 	a      uint8  // Accumulator Register
@@ -30,7 +32,6 @@ func Create(b bus.ReadableWriteable) *CPU6502 {
 	c.Reset()
 	return c
 }
-
 
 func (c *CPU6502) Reset() {
 	c.addrAbs = 0xFFFC

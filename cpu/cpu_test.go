@@ -35,8 +35,8 @@ const basicCode = `
 A2 0A 8E 00 00 A2 03 8E
 01 00 AC 00 00 A9 00 18
 6D 01 00 88 D0 FA 8D 02
-00 EA EA EA
-`
+00 EA EA EA`
+const basicCodeCyclesLimit = 128
 
 func TestCPU_BasicCode(t *testing.T) {
 	// given
@@ -50,7 +50,7 @@ func TestCPU_BasicCode(t *testing.T) {
 	c := cpu.Create(&b)
 
 	// when
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < basicCodeCyclesLimit; i++ {
 		c.Clock()
 	}
 	b.Print(0x0000, 0x00FF)
