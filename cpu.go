@@ -46,7 +46,7 @@ func (c *cpu6502) read(addr uint16) uint8 {
 	return c.bus.read(addr, true)
 }
 
-func (c *cpu6502) fetchOpcode() uint8 {
+func (c *cpu6502) fetch() uint8 {
 	if c.lookupOpcodes[c.opcode].addressing.name == lblAddressingModeIMP {
 		c.fetched = c.read(c.addrAbs)
 	}
