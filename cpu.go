@@ -52,3 +52,17 @@ func (c *cpu6502) fetch() uint8 {
 	}
 	return c.fetched
 }
+
+func (c *cpu6502) reset() {
+	c.addrAbs = 0xFFFC
+	c.pc = uint16(c.read(c.addrAbs + 1)) << 8 | uint16(c.read(c.addrAbs))
+	c.a = 0
+	c.x = 0
+	c.y = 0
+	c.sp = 0xFD
+	c.status = 0 | flagU
+	c.addrRel = 0
+	c.addrAbs = 0
+	c.fetched = 0
+	c.cycles = 8
+}

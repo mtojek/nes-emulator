@@ -45,7 +45,7 @@ func (b *bus) write(addr uint16, data uint8) {
 		}
 	}
 
-	log.Printf("unmapped memory range, nothing written to the bus (addr: %#x, data: %#x)\n", addr, data)
+	log.Printf("unmapped memory range, nothing written to the bus (addr: %#04x, data: %#04x)\n", addr, data)
 }
 
 func (b *bus) read(addr uint16, bReadOnly bool) uint8 {
@@ -55,6 +55,6 @@ func (b *bus) read(addr uint16, bReadOnly bool) uint8 {
 		}
 	}
 
-	log.Printf("unmapped memory range, zero read from the bus (addr: %#x, data: %t)\n", addr, bReadOnly)
+	log.Printf("unmapped memory range, zero read from the bus (addr: %#04x, readOnly: %t)\n", addr, bReadOnly)
 	return 0
 }
