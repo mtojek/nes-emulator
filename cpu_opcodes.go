@@ -149,22 +149,83 @@ func (c *cpu6502) beq() uint8 {
 	return 0
 }
 
+// Test bit
+func (c *cpu6502) bit() uint8 {
+	c.fetch()
+	t := c.a & c.fetched
+	c.setFlagZ(t)
+	c.setFlagN(c.fetched)
+	c.setFlag(flagV, (c.fetched&flagV) == flagV)
+	return 0
+}
+
+// Branch if Positive
+func (c *cpu6502) bpl() uint8 {
+	if c.getFlag(flagN) == 0 {
+		c.cycles++
+		c.addrAbs = c.pc + c.addrRel
+
+		if (c.addrAbs & 0xFF00) != (c.pc & 0xFF00) {
+			c.cycles++
+		}
+		c.pc = c.addrAbs
+	}
+	return 0
+}
+
 // Break
 func (c *cpu6502) brk() uint8 {
 	c.pc++
 
 	c.setFlag(flagI, true)
-	c.bus.write(0x0100 + uint16(c.sp), uint8(c.pc >> 8))
+	c.bus.write(0x0100+uint16(c.sp), uint8(c.pc>>8))
 	c.sp--
-	c.bus.write(0x0100 + uint16(c.sp), uint8(c.pc))
+	c.bus.write(0x0100+uint16(c.sp), uint8(c.pc))
 	c.sp--
 
 	c.setFlag(flagB, true)
-	c.bus.write(0x0100 + uint16(c.sp), c.status)
+	c.bus.write(0x0100+uint16(c.sp), c.status)
 	c.sp--
 	c.setFlag(flagB, false)
 
-	c.pc = uint16(c.bus.read(0xFFFE, true)) | uint16(c.bus.read(0xFFFF, true)) << 8
+	c.pc = uint16(c.bus.read(0xFFFE, true)) | uint16(c.bus.read(0xFFFF, true))<<8
+	return 0
+}
+
+// Clear Carry Flag
+func (c *cpu6502) clc() uint8 {
+	c.setFlag(flagC, false)
+	return 0
+}
+
+// Clear Decimal Flag
+func (c *cpu6502) cld() uint8 {
+	c.setFlag(flagD, false)
+	return 0
+}
+
+// Disable Interrupts / Clear Interrupt Flag
+func (c *cpu6502) cli() uint8 {
+	c.setFlag(flagI, false)
+	return 0
+}
+
+// Clear Overflow Flag
+func (c *cpu6502) clv() uint8 {
+	c.setFlag(flagV, false)
+	return 0
+}
+
+// Jump To Sub-Routine
+func (c *cpu6502) jsr() uint8 {
+	c.pc--
+
+	c.bus.write(0x0100+uint16(c.sp), uint8(c.pc>>8))
+	c.sp--
+	c.bus.write(0x0100+uint16(c.sp), uint8(c.pc))
+	c.sp--
+
+	c.pc = c.addrAbs
 	return 0
 }
 
@@ -180,6 +241,39 @@ func (c *cpu6502) nop() uint8 {
 	case 0xDC:
 	case 0xFC:
 		return 1
+	}
+	return 0
+}
+
+// Bitwise Logic OR
+func (c *cpu6502) ora() uint8 {
+	c.fetch()
+	c.a = c.a | c.fetched
+	c.setFlagZ(c.a)
+	c.setFlagN(c.a)
+	return 1
+}
+
+// Push Status Register to Stack
+func (c *cpu6502) php() uint8 {
+	c.bus.write(0x0100+uint16(c.sp), c.status|flagB|flagU)
+	c.setFlag(flagB, false)
+	c.setFlag(flagU, false)
+	c.sp--
+	return 0
+}
+
+// Rotate Left
+func (c *cpu6502) rol() uint8 {
+	c.fetch()
+	t := uint16(c.fetched) << 1 | uint16(c.getFlag(flagC))
+	c.setFlag(flagC, t & 0xFF00 > 0)
+	c.setFlagZ(uint8(t))
+	c.setFlagN(uint8(t))
+	if c.lookupOpcodes[c.opcode].addressing.name == lblAddressingModeIMP {
+		c.a = uint8(t)
+	} else {
+		c.bus.write(c.addrAbs, uint8(t))
 	}
 	return 0
 }

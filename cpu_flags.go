@@ -19,7 +19,7 @@ func (c *cpu6502) getFlag(f uint8) uint8 {
 }
 
 func (c *cpu6502) setFlagN(value uint8) {
-	c.setFlag(flagN, (value&0x80) == 0x80)
+	c.setFlag(flagN, (value&flagN) == flagN)
 }
 
 func (c *cpu6502) setFlagZ(value uint8) {
