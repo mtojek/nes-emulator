@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 )
 
@@ -57,4 +58,21 @@ func (b *bus) read(addr uint16, bReadOnly bool) uint8 {
 
 	log.Printf("unmapped memory range, zero read from the bus (addr: %#04x, readOnly: %t)\n", addr, bReadOnly)
 	return 0
+}
+
+func (b *bus) print(from, to uint16) {
+	for offset := from; offset <= to; offset++ {
+		if offset%16 == 0 {
+			fmt.Printf("%04X: ", offset)
+		}
+		fmt.Printf("%02X ", b.read(offset, true))
+
+		if offset%16 == 15 {
+			fmt.Println()
+		}
+
+		if offset == 0xFFFF {
+			break // safety exit
+		}
+	}
 }

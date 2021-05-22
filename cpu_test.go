@@ -8,7 +8,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-/**
+const standardCodeLocation = 0x8000
+
+/*
 *=$8000
 LDX #10
 STX $0000
@@ -39,8 +41,8 @@ func TestCPU_BasicCode(t *testing.T) {
 
 	r := createRAM()
 	b.connect(0x0000, 0xFFFF, r)
-	loadIntoRAM(t, r, 0x8000, basicCode)
-	setResetVector(r, 0x8000)
+	loadIntoRAM(t, r, standardCodeLocation, basicCode)
+	setResetVector(r, standardCodeLocation)
 
 	c := createCPU(&b)
 	c.reset()
@@ -49,6 +51,8 @@ func TestCPU_BasicCode(t *testing.T) {
 	for i := 0; i < 1000; i++ {
 		c.clock()
 	}
+	b.print(0x0000, 0x00FF)
+	b.print(standardCodeLocation, standardCodeLocation+0x00FF)
 
 	// then
 	require.Equal(t, r.memory[0x0000], uint8(0x0A))
