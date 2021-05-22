@@ -47,7 +47,8 @@ func (c *cpu6502) read(addr uint16) uint8 {
 }
 
 func (c *cpu6502) fetch() uint8 {
-	if c.lookupOpcodes[c.opcode].addressing.name == lblAddressingModeIMP {
+	ins := c.lookupOpcodes[c.opcode]
+	if ins.addressing.name != lblAddressingModeIMP {
 		c.fetched = c.read(c.addrAbs)
 	}
 	return c.fetched
@@ -55,7 +56,7 @@ func (c *cpu6502) fetch() uint8 {
 
 func (c *cpu6502) reset() {
 	c.addrAbs = 0xFFFC
-	c.pc = uint16(c.read(c.addrAbs + 1)) << 8 | uint16(c.read(c.addrAbs))
+	c.pc = uint16(c.read(c.addrAbs+1))<<8 | uint16(c.read(c.addrAbs))
 	c.a = 0
 	c.x = 0
 	c.y = 0

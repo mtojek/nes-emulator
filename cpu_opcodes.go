@@ -459,7 +459,7 @@ func (c *cpu6502) pha() uint8 {
 // Pop Accumulator from Stack
 func (c *cpu6502) pla() uint8 {
 	c.sp++
-	c.a = c.read(0x0100+uint16(c.sp))
+	c.a = c.read(0x0100 + uint16(c.sp))
 	c.setFlagZ(c.a)
 	c.setFlagN(c.a)
 	return 0
@@ -477,7 +477,7 @@ func (c *cpu6502) php() uint8 {
 // Pop Status Register off Stack
 func (c *cpu6502) plp() uint8 {
 	c.sp++
-	c.status = c.read(0x0100+uint16(c.sp))
+	c.status = c.read(0x0100 + uint16(c.sp))
 	c.setFlag(flagU, true)
 	return 0
 }
@@ -515,12 +515,12 @@ func (c *cpu6502) ror() uint8 {
 // Return from Interrupt
 func (c *cpu6502) rti() uint8 {
 	c.sp++
-	c.status = c.read(0x0100+uint16(c.sp))
+	c.status = c.read(0x0100 + uint16(c.sp))
 	c.status &= ^flagB
 	c.status &= ^flagU
 
 	c.sp++
-	c.pc = uint16(c.read(0x0100+uint16(c.sp)))
+	c.pc = uint16(c.read(0x0100 + uint16(c.sp)))
 	c.sp++
 	c.pc |= uint16(c.read(0x0100+uint16(c.sp))) << 8
 	return 0
@@ -529,7 +529,7 @@ func (c *cpu6502) rti() uint8 {
 // Return from Subroutine
 func (c *cpu6502) rts() uint8 {
 	c.sp++
-	c.pc = uint16(c.read(0x0100+uint16(c.sp)))
+	c.pc = uint16(c.read(0x0100 + uint16(c.sp)))
 	c.sp++
 	c.pc |= uint16(c.read(0x0100+uint16(c.sp))) << 8
 

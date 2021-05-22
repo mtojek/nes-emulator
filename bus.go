@@ -39,7 +39,7 @@ func (b *bus) connect(addrFrom, addrTo uint16, rw readableWriteable) {
 
 func (b *bus) write(addr uint16, data uint8) {
 	for _, m := range b.maps {
-		if m.from >= addr && m.to <= addr {
+		if m.from <= addr && addr <= m.to {
 			m.rw.write(addr, data)
 			return
 		}
@@ -50,7 +50,7 @@ func (b *bus) write(addr uint16, data uint8) {
 
 func (b *bus) read(addr uint16, bReadOnly bool) uint8 {
 	for _, m := range b.maps {
-		if m.from >= addr && m.to <= addr {
+		if m.from <= addr && addr <= m.to {
 			return m.rw.read(addr, bReadOnly)
 		}
 	}

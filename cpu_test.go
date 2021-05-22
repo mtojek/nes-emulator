@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/hex"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -26,7 +25,7 @@ STA $002
 NOP
 NOP
 NOP
- */
+*/
 const basicCode = `
 A2 0A 8E 00 00 A2 03 8E
 01 00 AC 00 00 A9 00 18
@@ -47,12 +46,14 @@ func TestCPU_BasicCode(t *testing.T) {
 	c.reset()
 
 	// when
-	for i := 0; i < 30; i++ {
+	for i := 0; i < 1000; i++ {
 		c.clock()
 	}
 
 	// then
-	fmt.Println("done")
+	require.Equal(t, r.memory[0x0000], uint8(0x0A))
+	require.Equal(t, r.memory[0x0001], uint8(0x03))
+	require.Equal(t, r.memory[0x0002], uint8(0x1E))
 }
 
 func loadIntoRAM(t *testing.T, ram writeable, offset uint16, code string) {
@@ -62,11 +63,11 @@ func loadIntoRAM(t *testing.T, ram writeable, offset uint16, code string) {
 	require.NoError(t, err, "can't decode machine code")
 
 	for i := uint16(0); i < uint16(len(decoded)); i++ {
-		ram.write(offset + i, decoded[i])
+		ram.write(offset+i, decoded[i])
 	}
 }
 
 func setResetVector(ram writeable, offset uint16) {
 	ram.write(0xFFFC, uint8(offset))
-	ram.write(0xFFFD, uint8(offset >> 8))
+	ram.write(0xFFFD, uint8(offset>>8))
 }
