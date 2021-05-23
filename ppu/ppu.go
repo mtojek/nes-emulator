@@ -11,6 +11,18 @@ type PPU2C02 struct {
 	ppuBus bus.ReadableWriteable
 }
 
+type registersHandler struct{}
+
+func (rh *registersHandler) Read(addr uint16, bReadOnly bool) uint8 {
+	panic("implement me")
+}
+
+func (rh *registersHandler) Write(addr uint16, data uint8) {
+	panic("implement me")
+}
+
+var _ bus.ReadableWriteable = new(registersHandler)
+
 func Create(cpuBus, ppuBus bus.ReadableWriteable) *PPU2C02 {
 	return &PPU2C02{
 		cpuBus: cpuBus,
@@ -19,5 +31,5 @@ func Create(cpuBus, ppuBus bus.ReadableWriteable) *PPU2C02 {
 }
 
 func (p *PPU2C02) Registers() bus.ReadableWriteable {
-	panic("TODO")
+	return new(registersHandler)
 }
