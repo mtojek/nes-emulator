@@ -2,7 +2,7 @@ package memory
 
 import "github.com/mtojek/nes-emulator/bus"
 
-const defaultRAMSize = 0x7FF
+const defaultRAMSize = 0x800
 
 type Memory struct {
 	blob []uint8
