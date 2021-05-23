@@ -25,4 +25,5 @@ func main() {
 
 	console := nes.Create()
 	console.Insert(cart)
+	console.Reset()
 }
