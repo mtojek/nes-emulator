@@ -45,7 +45,7 @@ func TestCPU_BasicCode(t *testing.T) {
 	mem := memory.Create()
 	b.Connect(0x0000, 0x1FFF, mem)
 
-	prog := memory.CreateWithSize(64*1024 - 0x1FFF)
+	prog := memory.CreateWithSize(64*1024 - 0x2000)
 	b.Connect(0x2000, 0xFFFF, prog)
 
 	loadIntoRAM(t, &b, standardCodeLocation, basicCode)
