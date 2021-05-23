@@ -3,6 +3,7 @@ package cartridge
 import (
 	"encoding/binary"
 	"github.com/pkg/errors"
+	"io"
 	"os"
 )
 
@@ -16,13 +17,14 @@ type Cartridge struct {
 }
 
 func Load(path string) (*Cartridge, error) {
-	nesFile, err := os.Open(path)
+	file, err := os.Open(path)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't open file")
 	}
+	defer file.Close()
 
 	var header INESFileHeader
-	if err := binary.Read(nesFile, binary.LittleEndian, &header); err != nil {
+	if err := binary.Read(file, binary.LittleEndian, &header); err != nil {
 		return nil, err
 	}
 
@@ -31,5 +33,34 @@ func Load(path string) (*Cartridge, error) {
 		return nil, errors.New("invalid iNES file (bad magic)")
 	}
 
-	return &Cartridge{}, nil
+	// read trainer if present (unused)
+	if header.Control1&4 == 4 {
+		trainer := make([]byte, 512)
+		if _, err := io.ReadFull(file, trainer); err != nil {
+			return nil, errors.Wrap(err, "can't read trainer")
+		}
+	}
+
+	// Read PRG-ROM bank(s)
+	prg := make([]byte, int(header.PRGRomChunks)*0x4000)
+	if _, err := io.ReadFull(file, prg); err != nil {
+		return nil, errors.Wrap(err, "can't read PRG-ROM banks")
+	}
+
+	// Read CHR-ROM bank(s)
+	chr := make([]byte, int(header.CHRRomChunks)*0x2000)
+	if _, err := io.ReadFull(file, chr); err != nil {
+		return nil, errors.Wrap(err, "can't read CHR-ROM banks")
+	}
+
+	nMapperID := ((header.Control2 >> 4) << 4) | (header.Control1 >> 4)
+
+	return &Cartridge{
+		vPRGMemory: prg,
+		vCHRMemory: chr,
+
+		nMapperID: nMapperID,
+		nPRGBanks: header.PRGRomChunks,
+		nCHRBanks: header.CHRRomChunks,
+	}, nil
 }
