@@ -11,6 +11,9 @@ import (
 type NES struct {
 	systemClock uint32
 
+	cpuBus *bus.Bus
+	ppuBus *bus.Bus
+
 	cpu *cpu.CPU6502
 }
 
@@ -20,7 +23,6 @@ func Create() *NES {
 
 	// CPU
 	aCPU := cpu.Create(&cpuBus)
-
 	cpuInternalRAM := memory.CreateMemory()
 	cpuInternalRAMWithMirroring := memory.CreateMirroring(cpuInternalRAM, 0x07FF)
 	cpuBus.Connect(0x0000, 0x1FFF, cpuInternalRAMWithMirroring)
@@ -31,12 +33,15 @@ func Create() *NES {
 	cpuBus.Connect(0x2000, 0x3FFF, ppuRegisters)
 
 	return &NES{
+		cpuBus: &cpuBus,
+		ppuBus: &ppuBus,
+
 		cpu: aCPU,
 	}
 }
 
-func (n *NES) Insert(cartridge *cartridge.Cartridge) {
-
+func (n *NES) Insert(cart *cartridge.Cartridge) {
+	cart.ConnectTo(n.cpuBus, n.ppuBus)
 }
 
 func (n *NES) Reset() {

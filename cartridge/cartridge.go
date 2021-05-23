@@ -2,10 +2,12 @@ package cartridge
 
 import (
 	"encoding/binary"
-	"github.com/mtojek/nes-emulator/bus"
-	"github.com/pkg/errors"
 	"io"
 	"os"
+
+	"github.com/mtojek/nes-emulator/bus"
+	"github.com/mtojek/nes-emulator/mappers"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -19,7 +21,7 @@ type Cartridge struct {
 	vPRGMemory []uint8
 	vCHRMemory []uint8
 
-	nMapperID uint8
+	mapper mappers.Mapper
 	mirror uint8
 
 	nPRGBanks uint8
@@ -67,6 +69,10 @@ func Load(path string) (*Cartridge, error) {
 
 	// Configure mapper
 	nMapperID := ((header.Control2 >> 4) << 4) | (header.Control1 >> 4)
+	mapper, err := mappers.Load(nMapperID)
+	if err != nil {
+		return nil, errors.Wrap(err, "can't load selected mapper")
+	}
 
 	// Configure mirroring
 	mirror1 := header.Control1 & 1
@@ -77,7 +83,7 @@ func Load(path string) (*Cartridge, error) {
 		vPRGMemory: prg,
 		vCHRMemory: chr,
 
-		nMapperID: nMapperID,
+		mapper: mapper,
 		mirror: mirror,
 
 		nPRGBanks: header.PRGROMChunks,
@@ -86,9 +92,15 @@ func Load(path string) (*Cartridge, error) {
 }
 
 func (c *Cartridge) Read(addr uint16, bReadOnly bool) uint8 {
-	panic("implement me")
+	mapped := c.mapper.Map(addr)
+	return c.vPRGMemory[mapped]
 }
 
 func (c *Cartridge) Write(addr uint16, data uint8) {
-	panic("implement me")
+	mapped := c.mapper.Map(addr)
+	c.vCHRMemory[mapped] = data
+}
+
+func (c *Cartridge) ConnectTo(cpuBus *bus.Bus, ppuBus *bus.Bus) {
+	c.mapper.ConnectTo(cpuBus, ppuBus, c)
 }
