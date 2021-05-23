@@ -40,30 +40,30 @@ const basicCodeCyclesLimit = 128
 
 func TestCPU_BasicCode(t *testing.T) {
 	// given
-	var b bus.Bus
+	var cpuBus bus.Bus
 
 	mem := memory.CreateMemory()
-	b.Connect(0x0000, 0x1FFF, mem)
+	cpuBus.Connect(0x0000, 0x1FFF, mem)
 
 	prog := memory.CreateMemoryWithSize(0x2000, 64*1024-0x2000)
-	b.Connect(0x2000, 0xFFFF, prog)
+	cpuBus.Connect(0x2000, 0xFFFF, prog)
 
-	loadIntoRAM(t, &b, standardCodeLocation, basicCode)
-	setResetVector(&b, standardCodeLocation)
+	loadIntoRAM(t, &cpuBus, standardCodeLocation, basicCode)
+	setResetVector(&cpuBus, standardCodeLocation)
 
-	c := cpu.Create(&b)
+	c := cpu.Create(&cpuBus)
 
 	// when
 	for i := 0; i < basicCodeCyclesLimit; i++ {
 		c.Clock()
 	}
-	b.Print(0x0000, 0x00FF)
-	b.Print(standardCodeLocation, standardCodeLocation+0x00FF)
+	cpuBus.Print(0x0000, 0x00FF)
+	cpuBus.Print(standardCodeLocation, standardCodeLocation+0x00FF)
 
 	// then
-	require.Equal(t, b.Read(0x0000, true), uint8(0x0A))
-	require.Equal(t, b.Read(0x0001, true), uint8(0x03))
-	require.Equal(t, b.Read(0x0002, true), uint8(0x1E))
+	require.Equal(t, cpuBus.Read(0x0000, true), uint8(0x0A))
+	require.Equal(t, cpuBus.Read(0x0001, true), uint8(0x03))
+	require.Equal(t, cpuBus.Read(0x0002, true), uint8(0x1E))
 }
 
 func loadIntoRAM(t *testing.T, ram bus.Writeable, offset uint16, code string) {

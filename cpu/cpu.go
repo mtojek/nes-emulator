@@ -12,8 +12,6 @@ type CPU6502 struct {
 	pc     uint16 // Program Counter
 	status uint8  // Status Register
 
-	bus bus.ReadableWriteable
-
 	fetched uint8
 	addrAbs uint16
 	addrRel uint16
@@ -22,6 +20,8 @@ type CPU6502 struct {
 
 	// Lookups
 	lookupOpcodes []instruction
+
+	bus bus.ReadableWriteable
 }
 
 func Create(b bus.ReadableWriteable) *CPU6502 {

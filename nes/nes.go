@@ -2,20 +2,48 @@ package nes
 
 import (
 	"github.com/mtojek/nes-emulator/bus"
+	"github.com/mtojek/nes-emulator/cartridge"
 	"github.com/mtojek/nes-emulator/cpu"
 	"github.com/mtojek/nes-emulator/memory"
+	"github.com/mtojek/nes-emulator/ppu"
 )
 
-type NES struct{}
+type NES struct {
+	systemClock uint32
+
+	cpu *cpu.CPU6502
+}
 
 func Create() *NES {
-	var b bus.Bus
+	var cpuBus bus.Bus
+	var ppuBus bus.Bus
 
-	ram := memory.CreateMemory()
-	mirroredRAM := memory.CreateMirroring(ram, 0x07FF)
-	b.Connect(0x0000, 0x1FFF, mirroredRAM)
+	// CPU
+	aCPU := cpu.Create(&cpuBus)
 
-	cpu.Create(&b)
+	cpuInternalRAM := memory.CreateMemory()
+	cpuInternalRAMWithMirroring := memory.CreateMirroring(cpuInternalRAM, 0x07FF)
+	cpuBus.Connect(0x0000, 0x1FFF, cpuInternalRAMWithMirroring)
 
-	return new(NES)
+	// PPU
+	aPPU := ppu.Create(&cpuBus, &ppuBus)
+	ppuRegisters := memory.CreateMirroring(aPPU.Registers(), 0x0007)
+	cpuBus.Connect(0x2000, 0x3FFF, ppuRegisters)
+
+	return &NES{
+		cpu: aCPU,
+	}
+}
+
+func (n *NES) InsertCartridge(cartridge *cartridge.Cartridge) {
+
+}
+
+func (n *NES) Reset() {
+	n.cpu.Reset()
+	n.systemClock = 0
+}
+
+func (n *NES) Clock() {
+
 }
