@@ -16,3 +16,6 @@
 
 # IDEA
 .idea/
+
+# NES games
+*.nes

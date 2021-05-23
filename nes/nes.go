@@ -35,7 +35,7 @@ func Create() *NES {
 	}
 }
 
-func (n *NES) InsertCartridge(cartridge *cartridge.Cartridge) {
+func (n *NES) Insert(cartridge *cartridge.Cartridge) {
 
 }
 

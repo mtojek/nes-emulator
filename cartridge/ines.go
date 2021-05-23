@@ -1,5 +1,7 @@
 package cartridge
 
+const iNESFileMagic = 0x1a53454e
+
 type INESFileHeader struct {
 	Magic        uint32  // iNES magic number
 	PRGRomChunks uint8   // number of PRG-ROM banks (16KB each)
@@ -10,8 +12,4 @@ type INESFileHeader struct {
 	TVSystem1    uint8   // TV system
 	TVSystem2    uint8   // TV system
 	_            [5]byte // unused
-}
-
-func LoadCartridge(path string) (*Cartridge, error) {
-	panic("TODO")
 }
