@@ -2,28 +2,33 @@ package memory
 
 import "github.com/mtojek/nes-emulator/bus"
 
-const defaultRAMSize = 0x800
+const (
+	defaultRAMSize     = 0x0800
+	defaultStartOffset = 0x0000
+)
 
 type Memory struct {
-	blob []uint8
+	startOffset uint16
+	blob        []uint8
 }
 
 var _ bus.ReadableWriteable = new(Memory)
 
-func Create() *Memory {
-	return CreateWithSize(defaultRAMSize)
+func CreateMemory() *Memory {
+	return CreateMemoryWithSize(defaultStartOffset, defaultRAMSize)
 }
 
-func CreateWithSize(size uint16) *Memory {
+func CreateMemoryWithSize(startOffset, size uint16) *Memory {
 	return &Memory{
-		blob: make([]uint8, size),
+		startOffset: startOffset,
+		blob:        make([]uint8, size),
 	}
 }
 
 func (r *Memory) Write(addr uint16, data uint8) {
-	r.blob[addr] = data
+	r.blob[addr-r.startOffset] = data
 }
 
 func (r *Memory) Read(addr uint16, _ bool) uint8 {
-	return r.blob[addr]
+	return r.blob[addr-r.startOffset]
 }
