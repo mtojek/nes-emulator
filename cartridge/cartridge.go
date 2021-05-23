@@ -28,7 +28,37 @@ type Cartridge struct {
 	nCHRBanks uint8
 }
 
-var _ bus.ReadableWriteable = new(Cartridge)
+type prgMemoryHandler struct {
+	c *Cartridge
+}
+
+var _ bus.ReadableWriteable = new(prgMemoryHandler)
+
+type chrMemoryHandler struct {
+	c *Cartridge
+}
+
+var _ bus.ReadableWriteable = new(chrMemoryHandler)
+
+func (mh *prgMemoryHandler) Read(addr uint16, bReadOnly bool) uint8 {
+	mapped := mh.c.mapper.MapCPU(addr)
+	return mh.c.vPRGMemory[mapped]
+}
+
+func (mh *prgMemoryHandler) Write(addr uint16, data uint8) {
+	mapped := mh.c.mapper.MapCPU(addr)
+	mh.c.vPRGMemory[mapped] = data
+}
+
+func (mh *chrMemoryHandler) Read(addr uint16, bReadOnly bool) uint8 {
+	mapped := mh.c.mapper.MapPPU(addr)
+	return mh.c.vCHRMemory[mapped]
+}
+
+func (mh *chrMemoryHandler) Write(addr uint16, data uint8) {
+	mapped := mh.c.mapper.MapPPU(addr)
+	mh.c.vCHRMemory[mapped] = data
+}
 
 func Load(path string) (*Cartridge, error) {
 	file, err := os.Open(path)
@@ -55,10 +85,10 @@ func Load(path string) (*Cartridge, error) {
 		}
 	}
 
-	// Read PRG-ROM bank(s)
+	// Read prg-ROM bank(s)
 	prg := make([]byte, int(header.PRGROMChunks)*0x4000)
 	if _, err := io.ReadFull(file, prg); err != nil {
-		return nil, errors.Wrap(err, "can't read PRG-ROM banks")
+		return nil, errors.Wrap(err, "can't read prg-ROM banks")
 	}
 
 	// Read CHR-ROM bank(s)
@@ -69,7 +99,7 @@ func Load(path string) (*Cartridge, error) {
 
 	// Configure mapper
 	nMapperID := ((header.Control2 >> 4) << 4) | (header.Control1 >> 4)
-	mapper, err := mappers.Load(nMapperID)
+	mapper, err := mappers.Load(nMapperID, header.PRGROMChunks)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't load selected mapper")
 	}
@@ -91,16 +121,14 @@ func Load(path string) (*Cartridge, error) {
 	}, nil
 }
 
-func (c *Cartridge) Read(addr uint16, bReadOnly bool) uint8 {
-	mapped := c.mapper.Map(addr)
-	return c.vPRGMemory[mapped]
+func (c *Cartridge) prg() bus.ReadableWriteable {
+	return &prgMemoryHandler{c}
 }
 
-func (c *Cartridge) Write(addr uint16, data uint8) {
-	mapped := c.mapper.Map(addr)
-	c.vCHRMemory[mapped] = data
+func (c *Cartridge) chr() bus.ReadableWriteable {
+	return &chrMemoryHandler{c}
 }
 
 func (c *Cartridge) ConnectTo(cpuBus *bus.Bus, ppuBus *bus.Bus) {
-	c.mapper.ConnectTo(cpuBus, ppuBus, c)
+	c.mapper.ConnectTo(cpuBus, ppuBus, c.prg(), c.chr())
 }
