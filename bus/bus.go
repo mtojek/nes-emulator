@@ -41,7 +41,7 @@ func (b *Bus) Connect(addrFrom, addrTo uint16, rw ReadableWriteable) {
 func (b *Bus) Read(addr uint16, bReadOnly bool) uint8 {
 	for _, m := range b.maps {
 		if m.from <= addr && addr <= m.to {
-			return m.rw.Read(addr, bReadOnly)
+			return m.rw.Read(addr - m.from, bReadOnly)
 		}
 	}
 
@@ -52,7 +52,7 @@ func (b *Bus) Read(addr uint16, bReadOnly bool) uint8 {
 func (b *Bus) Write(addr uint16, data uint8) {
 	for _, m := range b.maps {
 		if m.from <= addr && addr <= m.to {
-			m.rw.Write(addr, data)
+			m.rw.Write(addr - m.from, data)
 			return
 		}
 	}

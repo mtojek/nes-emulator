@@ -42,10 +42,14 @@ func TestCPU_BasicCode(t *testing.T) {
 	// given
 	var b bus.Bus
 
-	r := ram.Create()
-	b.Connect(0x0000, 0xFFFF, r)
-	loadIntoRAM(t, r, standardCodeLocation, basicCode)
-	setResetVector(r, standardCodeLocation)
+	memory := ram.Create()
+	b.Connect(0x0000, 0x1FFF, memory)
+
+	prog := ram.CreateWithSize(64*1024 - 0x1FFF)
+	b.Connect(0x2000, 0xFFFF, prog)
+
+	loadIntoRAM(t, &b, standardCodeLocation, basicCode)
+	setResetVector(&b, standardCodeLocation)
 
 	c := cpu.Create(&b)
 
@@ -57,9 +61,9 @@ func TestCPU_BasicCode(t *testing.T) {
 	b.Print(standardCodeLocation, standardCodeLocation+0x00FF)
 
 	// then
-	require.Equal(t, r.Read(0x0000, true), uint8(0x0A))
-	require.Equal(t, r.Read(0x0001, true), uint8(0x03))
-	require.Equal(t, r.Read(0x0002, true), uint8(0x1E))
+	require.Equal(t, b.Read(0x0000, true), uint8(0x0A))
+	require.Equal(t, b.Read(0x0001, true), uint8(0x03))
+	require.Equal(t, b.Read(0x0002, true), uint8(0x1E))
 }
 
 func loadIntoRAM(t *testing.T, ram bus.Writeable, offset uint16, code string) {
@@ -73,7 +77,7 @@ func loadIntoRAM(t *testing.T, ram bus.Writeable, offset uint16, code string) {
 	}
 }
 
-func setResetVector(ram bus.Writeable, offset uint16) {
-	ram.Write(0xFFFC, uint8(offset))
-	ram.Write(0xFFFD, uint8(offset>>8))
+func setResetVector(b bus.Writeable, offset uint16) {
+	b.Write(0xFFFC, uint8(offset))
+	b.Write(0xFFFD, uint8(offset>>8))
 }

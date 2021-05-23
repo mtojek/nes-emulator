@@ -10,7 +10,7 @@ func main() {
 	var b bus.Bus
 
 	r := ram.Create()
-	b.Connect(0x0000, 0xFFFF, r)
+	b.Connect(0x0000, 0x1FFF, r)
 
 	cpu.Create(&b)
 }

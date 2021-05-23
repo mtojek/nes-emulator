@@ -2,6 +2,8 @@ package ram
 
 import "github.com/mtojek/nes-emulator/bus"
 
+const defaultRAMSize = 2048
+
 type RAM struct {
 	memory []uint8
 }
@@ -9,8 +11,12 @@ type RAM struct {
 var _ bus.ReadableWriteable = new(RAM)
 
 func Create() *RAM {
+	return CreateWithSize(defaultRAMSize)
+}
+
+func CreateWithSize(size uint16) *RAM {
 	return &RAM{
-		memory: make([]uint8, 64*1024),
+		memory: make([]uint8, size),
 	}
 }
 
