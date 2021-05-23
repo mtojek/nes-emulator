@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"github.com/mtojek/nes-emulator/bus"
 	"github.com/mtojek/nes-emulator/cpu"
-	"github.com/mtojek/nes-emulator/ram"
+	"github.com/mtojek/nes-emulator/memory"
 	"strings"
 	"testing"
 
@@ -42,10 +42,10 @@ func TestCPU_BasicCode(t *testing.T) {
 	// given
 	var b bus.Bus
 
-	memory := ram.Create()
-	b.Connect(0x0000, 0x1FFF, memory)
+	mem := memory.Create()
+	b.Connect(0x0000, 0x1FFF, mem)
 
-	prog := ram.CreateWithSize(64*1024 - 0x1FFF)
+	prog := memory.CreateWithSize(64*1024 - 0x1FFF)
 	b.Connect(0x2000, 0xFFFF, prog)
 
 	loadIntoRAM(t, &b, standardCodeLocation, basicCode)

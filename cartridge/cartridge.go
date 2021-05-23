@@ -1,3 +1,3 @@
 package cartridge
 
-type Cartridge struct {}
+type Cartridge struct{}

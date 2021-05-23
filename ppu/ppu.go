@@ -1,3 +1,3 @@
 package ppu
 
-type PPU2C02 struct {}
+type PPU2C02 struct{}
