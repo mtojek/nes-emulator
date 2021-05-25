@@ -1,12 +1,13 @@
 package nes
 
 import (
+	"image"
+
 	"github.com/mtojek/nes-emulator/bus"
 	"github.com/mtojek/nes-emulator/cartridge"
 	"github.com/mtojek/nes-emulator/cpu"
 	"github.com/mtojek/nes-emulator/memory"
 	"github.com/mtojek/nes-emulator/ppu"
-	"image"
 )
 
 type NES struct {
