@@ -60,9 +60,9 @@ func (n *NES) Clock() {
 }
 
 func (n *NES) FrameComplete() bool {
-	return n.FrameComplete()
+	return n.ppu.FrameComplete()
 }
 
 func (n *NES) DrawNewFrame() {
-	n.DrawNewFrame()
+	n.ppu.DrawNewFrame()
 }

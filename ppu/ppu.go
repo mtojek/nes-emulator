@@ -1,11 +1,13 @@
 package ppu
 
-import "github.com/mtojek/nes-emulator/bus"
+import (
+	"github.com/mtojek/nes-emulator/bus"
+)
 
 type PPU2C02 struct {
 	nametable [2][1024]uint8
-	palette   [32]uint8
 	patterns  [2][4096]uint8
+	palette   [32]uint8
 
 	frameComplete bool
 
@@ -20,11 +22,14 @@ type registersHandler struct{}
 
 
 func (rh *registersHandler) Read(addr uint16, bReadOnly bool) uint8 {
-	panic("implement me")
+	//panic("implement me")
+	//fmt.Printf("(implement me) read addr: %04x\n", addr)
+	return 0
 }
 
 func (rh *registersHandler) Write(addr uint16, data uint8) {
-	panic("implement me")
+	//panic("implement me")
+	//fmt.Printf("(implement me) write addr: %04x, data: %02x\n", addr, data)
 }
 
 var _ bus.ReadableWriteable = new(registersHandler)
@@ -57,4 +62,8 @@ func (p *PPU2C02) Registers() bus.ReadableWriteable {
 
 func (p *PPU2C02) DrawNewFrame() {
 	p.frameComplete = false
+}
+
+func (p *PPU2C02) FrameComplete() bool {
+	return p.frameComplete
 }
