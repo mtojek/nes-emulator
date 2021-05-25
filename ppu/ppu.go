@@ -7,11 +7,17 @@ type PPU2C02 struct {
 	palette   [32]uint8
 	patterns  [2][4096]uint8
 
+	frameComplete bool
+
+	scanline int16
+	cycle uint16
+
 	cpuBus bus.ReadableWriteable
 	ppuBus bus.ReadableWriteable
 }
 
 type registersHandler struct{}
+
 
 func (rh *registersHandler) Read(addr uint16, bReadOnly bool) uint8 {
 	panic("implement me")
@@ -30,6 +36,25 @@ func Create(cpuBus, ppuBus bus.ReadableWriteable) *PPU2C02 {
 	}
 }
 
+func (p *PPU2C02) Clock() {
+	// fake noise
+	// sprScreen.SetPixel(cycle - 1, scanline, palScreen[(rand() % 2) ? 0x3F : 0x30]);
+
+	p.cycle++
+	if p.cycle >= 341 {
+		p.cycle = 0
+		p.scanline++
+		if p.scanline >= 261 {
+			p.scanline = -1
+			p.frameComplete = true
+		}
+	}
+}
+
 func (p *PPU2C02) Registers() bus.ReadableWriteable {
 	return new(registersHandler)
+}
+
+func (p *PPU2C02) DrawNewFrame() {
+	p.frameComplete = false
 }

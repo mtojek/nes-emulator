@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/mtojek/nes-emulator/cartridge"
 	"github.com/mtojek/nes-emulator/nes"
@@ -26,4 +27,19 @@ func main() {
 	console := nes.Create()
 	console.Insert(cart)
 	console.Reset()
+
+	for {
+		console.DrawNewFrame()
+
+		startFrameTime := time.Now()
+		for console.FrameComplete() {
+			console.Clock()
+		}
+		drawingDuration := time.Now().Sub(startFrameTime)
+		waitingTime := time.Second / 60 - drawingDuration
+
+		if waitingTime > 0 {
+			time.Sleep(waitingTime)
+		}
+	}
 }

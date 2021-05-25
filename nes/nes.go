@@ -9,12 +9,13 @@ import (
 )
 
 type NES struct {
-	systemClock uint32
+	systemClock uint64
 
 	cpuBus *bus.Bus
 	ppuBus *bus.Bus
 
 	cpu *cpu.CPU6502
+	ppu *ppu.PPU2C02
 }
 
 func Create() *NES {
@@ -37,6 +38,7 @@ func Create() *NES {
 		ppuBus: &ppuBus,
 
 		cpu: aCPU,
+		ppu: aPPU,
 	}
 }
 
@@ -50,5 +52,17 @@ func (n *NES) Reset() {
 }
 
 func (n *NES) Clock() {
+	n.ppu.Clock()
+	if n.systemClock % 3 == 0 {
+		n.cpu.Clock()
+	}
+	n.systemClock++
+}
 
+func (n *NES) FrameComplete() bool {
+	return n.FrameComplete()
+}
+
+func (n *NES) DrawNewFrame() {
+	n.DrawNewFrame()
 }
