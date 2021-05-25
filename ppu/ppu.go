@@ -2,6 +2,8 @@ package ppu
 
 import (
 	"github.com/mtojek/nes-emulator/bus"
+	"image"
+	"math/rand"
 )
 
 type PPU2C02 struct {
@@ -9,17 +11,18 @@ type PPU2C02 struct {
 	patterns  [2][4096]uint8
 	palette   [32]uint8
 
+	front *image.RGBA
+
 	frameComplete bool
 
 	scanline int16
-	cycle uint16
+	cycle    uint16
 
 	cpuBus bus.ReadableWriteable
 	ppuBus bus.ReadableWriteable
 }
 
 type registersHandler struct{}
-
 
 func (rh *registersHandler) Read(addr uint16, bReadOnly bool) uint8 {
 	//panic("implement me")
@@ -38,12 +41,20 @@ func Create(cpuBus, ppuBus bus.ReadableWriteable) *PPU2C02 {
 	return &PPU2C02{
 		cpuBus: cpuBus,
 		ppuBus: ppuBus,
+
+		front: image.NewRGBA(image.Rect(0, 0, 256, 240)),
 	}
 }
 
 func (p *PPU2C02) Clock() {
-	// fake noise
-	// sprScreen.SetPixel(cycle - 1, scanline, palScreen[(rand() % 2) ? 0x3F : 0x30]);
+	var colorOffest int
+	if rand.Int()%2 == 1 {
+		colorOffest = 0x3F
+	} else {
+		colorOffest = 0x30
+	}
+
+	p.front.Set(int(p.cycle-1), int(p.scanline), palette[colorOffest])
 
 	p.cycle++
 	if p.cycle >= 341 {
@@ -66,4 +77,8 @@ func (p *PPU2C02) DrawNewFrame() {
 
 func (p *PPU2C02) FrameComplete() bool {
 	return p.frameComplete
+}
+
+func (p *PPU2C02) Buffer() *image.RGBA {
+	return p.front
 }

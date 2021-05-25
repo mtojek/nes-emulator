@@ -19,9 +19,9 @@ func (m mapper000) ConnectTo(cpuBus *bus.Bus, ppuBus *bus.Bus, prgMemory bus.Rea
 
 func (m mapper000) MapCPU(addr uint16) uint16 {
 	if m.nPRGBanks > 1 {
-		return addr&0x7FFF
+		return addr & 0x7FFF
 	}
-	return addr&0x3FFF
+	return addr & 0x3FFF
 }
 
 func (m mapper000) MapPPU(addr uint16) uint16 {

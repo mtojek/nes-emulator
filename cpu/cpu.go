@@ -29,7 +29,7 @@ func Create(b bus.ReadableWriteable) *CPU6502 {
 		bus: b,
 	}
 	c.setupInstructions()
-	c.Reset()
+	//c.Reset()
 	return c
 }
 

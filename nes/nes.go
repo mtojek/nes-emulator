@@ -6,6 +6,7 @@ import (
 	"github.com/mtojek/nes-emulator/cpu"
 	"github.com/mtojek/nes-emulator/memory"
 	"github.com/mtojek/nes-emulator/ppu"
+	"image"
 )
 
 type NES struct {
@@ -53,7 +54,7 @@ func (n *NES) Reset() {
 
 func (n *NES) Clock() {
 	n.ppu.Clock()
-	if n.systemClock % 3 == 0 {
+	if n.systemClock%3 == 0 {
 		n.cpu.Clock()
 	}
 	n.systemClock++
@@ -65,4 +66,8 @@ func (n *NES) FrameComplete() bool {
 
 func (n *NES) DrawNewFrame() {
 	n.ppu.DrawNewFrame()
+}
+
+func (n *NES) Buffer() *image.RGBA {
+	return n.ppu.Buffer()
 }
