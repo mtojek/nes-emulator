@@ -3,6 +3,7 @@ package ppu
 import (
 	"github.com/mtojek/nes-emulator/bus"
 	"image"
+	"image/color"
 	"math/rand"
 )
 
@@ -67,7 +68,7 @@ func (p *PPU2C02) Clock() {
 		colorOffest = 0x30
 	}
 
-	p.front.Set(int(p.cycle-1), int(p.scanline), palette[colorOffest])
+	p.front.Set(int(p.cycle-1), int(p.scanline), nesPalette[colorOffest])
 
 	p.cycle++
 	if p.cycle >= 341 {
@@ -98,4 +99,8 @@ func (p *PPU2C02) FrameComplete() bool {
 
 func (p *PPU2C02) Buffer() *image.RGBA {
 	return p.front
+}
+
+func (p *PPU2C02) colourFromPaletteRAM(paletteIndex uint8, pixel uint8) color.RGBA {
+	return nesPalette[p.ppuBus.Read(0x3F00+(uint16(paletteIndex)<<2)+uint16(pixel), false)&0x3F]
 }

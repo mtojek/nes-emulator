@@ -2,7 +2,7 @@ package ppu
 
 import "image/color"
 
-var palette [64]color.RGBA
+var nesPalette [64]color.RGBA
 
 func init() {
 	colors := []uint32{
@@ -19,6 +19,6 @@ func init() {
 		r := byte(c >> 16)
 		g := byte(c >> 8)
 		b := byte(c)
-		palette[i] = color.RGBA{R: r, G: g, B: b, A: 0xFF}
+		nesPalette[i] = color.RGBA{R: r, G: g, B: b, A: 0xFF}
 	}
 }
