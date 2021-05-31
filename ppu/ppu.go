@@ -1,10 +1,11 @@
 package ppu
 
 import (
-	"github.com/mtojek/nes-emulator/bus"
 	"image"
 	"image/color"
 	"math/rand"
+
+	"github.com/mtojek/nes-emulator/bus"
 )
 
 type PPU2C02 struct {
@@ -19,16 +20,68 @@ type PPU2C02 struct {
 	scanline int16
 	cycle    uint16
 
+	controlReg   uint8bits
+	maskReg      uint8bits
+	statusReg    uint8bits
+	addressLatch uint8
+	dataBuffer   uint8bits
+
+	vramAddrReg uint16 // Active "pointer" address into nametable to extract background tile info
+	tramAddrReg uint16 // Temporary store of information to be "transferred" into "pointer" at various times
+
 	cpuBus bus.ReadableWriteable
 	ppuBus bus.ReadableWriteable
 }
 
-type cpuBusConnector struct{}
+type cpuBusConnector struct {
+	ppu *PPU2C02
+}
 
 func (cbc *cpuBusConnector) Read(addr uint16, bReadOnly bool) uint8 {
-	//panic("implement me")
 	//fmt.Printf("(implement me) read addr: %04x\n", addr)
-	return 0
+
+	var data uint8bits
+	if bReadOnly {
+		switch addr {
+		case 0x0000: // Control
+			data = cbc.ppu.controlReg
+		case 0x0001: // Mask
+			data = cbc.ppu.maskReg
+		case 0x0002: // Status
+			data = cbc.ppu.statusReg
+		case 0x0003: // OAM Address
+		case 0x0004: // OAM Data
+		case 0x0005: // Scroll
+		case 0x0006: // PPU Address
+		case 0x0007: // PPU Data
+		}
+	} else {
+		switch addr {
+		case 0x0000: // Control - Not readable
+		case 0x0001: // Mask - Not Readable
+		case 0x0002: // Status
+			data = (cbc.ppu.statusReg & 0xE0) | (cbc.ppu.dataBuffer) & 0x1F
+			cbc.ppu.statusReg = cbc.ppu.statusReg.withBit(flagStatusVerticalBlank, false)
+			cbc.ppu.addressLatch = 0
+		case 0x0003: // OAM Address
+		case 0x0004: // OAM Data
+		case 0x0005: // Scroll - Not Readable
+		case 0x0006: // PPU Address - Not Readable
+		case 0x0007: // PPU Data
+			data = cbc.ppu.dataBuffer
+			cbc.ppu.dataBuffer = uint8bits(cbc.ppu.ppuBus.Read(cbc.ppu.vramAddrReg, false))
+			if cbc.ppu.vramAddrReg >= 0x3F00 {
+				data = cbc.ppu.dataBuffer
+			}
+
+			if cbc.ppu.controlReg.bit(flagControlIncrementMode) {
+				cbc.ppu.vramAddrReg += 32
+			} else {
+				cbc.ppu.vramAddrReg += 1
+			}
+		}
+	}
+	return uint8(data)
 }
 
 func (cbc *cpuBusConnector) Write(addr uint16, data uint8) {
@@ -36,7 +89,9 @@ func (cbc *cpuBusConnector) Write(addr uint16, data uint8) {
 	//fmt.Printf("(implement me) write addr: %04x, data: %02x\n", addr, data)
 }
 
-type ppuBusConnector struct{}
+type ppuBusConnector struct {
+	ppu *PPU2C02
+}
 
 func (pbc *ppuBusConnector) Read(addr uint16, bReadOnly bool) uint8 {
 	//panic("implement me")
@@ -82,11 +137,11 @@ func (p *PPU2C02) Clock() {
 }
 
 func (p *PPU2C02) CPUBusConnector() bus.ReadableWriteable {
-	return new(cpuBusConnector)
+	return &cpuBusConnector{p}
 }
 
 func (p *PPU2C02) PPUBusConnector() bus.ReadableWriteable {
-	return new(ppuBusConnector)
+	return &ppuBusConnector{p}
 }
 
 func (p *PPU2C02) DrawNewFrame() {
