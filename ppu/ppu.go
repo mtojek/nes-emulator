@@ -22,20 +22,33 @@ type PPU2C02 struct {
 	ppuBus bus.ReadableWriteable
 }
 
-type registersHandler struct{}
+type cpuBusConnector struct{}
 
-func (rh *registersHandler) Read(addr uint16, bReadOnly bool) uint8 {
+func (cbc *cpuBusConnector) Read(addr uint16, bReadOnly bool) uint8 {
 	//panic("implement me")
 	//fmt.Printf("(implement me) read addr: %04x\n", addr)
 	return 0
 }
 
-func (rh *registersHandler) Write(addr uint16, data uint8) {
+func (cbc *cpuBusConnector) Write(addr uint16, data uint8) {
 	//panic("implement me")
 	//fmt.Printf("(implement me) write addr: %04x, data: %02x\n", addr, data)
 }
 
-var _ bus.ReadableWriteable = new(registersHandler)
+type ppuBusConnector struct{}
+
+func (pbc *ppuBusConnector) Read(addr uint16, bReadOnly bool) uint8 {
+	//panic("implement me")
+	//fmt.Printf("(implement me) read addr: %04x\n", addr)
+	return 0
+}
+
+func (pbc *ppuBusConnector) Write(addr uint16, data uint8) {
+	//panic("implement me")
+	//fmt.Printf("(implement me) write addr: %04x, data: %02x\n", addr, data)
+}
+
+var _ bus.ReadableWriteable = new(cpuBusConnector)
 
 func Create(cpuBus, ppuBus bus.ReadableWriteable) *PPU2C02 {
 	return &PPU2C02{
@@ -67,8 +80,12 @@ func (p *PPU2C02) Clock() {
 	}
 }
 
-func (p *PPU2C02) Registers() bus.ReadableWriteable {
-	return new(registersHandler)
+func (p *PPU2C02) CPUBusConnector() bus.ReadableWriteable {
+	return new(cpuBusConnector)
+}
+
+func (p *PPU2C02) PPUBusConnector() bus.ReadableWriteable {
+	return new(ppuBusConnector)
 }
 
 func (p *PPU2C02) DrawNewFrame() {

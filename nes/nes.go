@@ -26,14 +26,19 @@ func Create() *NES {
 
 	// CPU
 	aCPU := cpu.Create(&cpuBus)
-	cpuInternalRAM := memory.CreateMemory()
-	cpuInternalRAMWithMirroring := memory.CreateMirroring(cpuInternalRAM, 0x07FF)
-	cpuBus.Connect(0x0000, 0x1FFF, cpuInternalRAMWithMirroring)
+
+	cpuBus.Connect(0x0000, 0x1FFF, memory.CreateMirroring(memory.CreateMemory(), 0x07FF))
 
 	// PPU
 	aPPU := ppu.Create(&cpuBus, &ppuBus)
-	ppuRegisters := memory.CreateMirroring(aPPU.Registers(), 0x0007)
-	cpuBus.Connect(0x2000, 0x3FFF, ppuRegisters)
+
+	ppuBusConnector := aPPU.PPUBusConnector()
+	ppuBus.Connect(0x0000, 0x1FFF, ppuBusConnector)
+	ppuBus.Connect(0x2000, 0x3EFF, memory.CreateMirroring(ppuBusConnector, 0x0FFF))
+	ppuBus.Connect(0x3F00, 0x3FFF, memory.CreateMirroring(ppuBusConnector, 0x0FFF))
+
+	cpuBusConnector := aPPU.CPUBusConnector()
+	cpuBus.Connect(0x2000, 0x3FFF, memory.CreateMirroring(cpuBusConnector, 0x001F))
 
 	return &NES{
 		cpuBus: &cpuBus,
