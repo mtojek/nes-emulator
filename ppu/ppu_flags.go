@@ -29,16 +29,11 @@ const (
 	flagControlEnableNMI         = uint8(1) << 7
 )
 
-/**
-
-loopy
-
-
-			uint16_t coarse_x : 5;
-			uint16_t coarse_y : 5;
-			uint16_t nametable_x : 1;
-			uint16_t nametable_y : 1;
-			uint16_t fine_y : 3;
-			uint16_t unused : 1;
-
-*/
+const (
+	flagLoopyCoarseX = uint8(1) << 0
+	flagLoopyCoarseY = uint8(1) << 5
+	flagLoopyNametableX = uint8(1) << 10
+	flagLoopyNametableY = uint8(1) << 11
+	flagLoopyFineY = uint8(1) << 12
+	flagLoopyUnused = uint8(1) << 15
+)

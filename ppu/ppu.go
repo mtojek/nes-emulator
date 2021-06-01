@@ -25,9 +25,10 @@ type PPU2C02 struct {
 	statusReg    uint8bits
 	addressLatch uint8
 	dataBuffer   uint8bits
+	fineX        uint8
 
-	vramAddrReg uint16 // Active "pointer" address into nametable to extract background tile info
-	tramAddrReg uint16 // Temporary store of information to be "transferred" into "pointer" at various times
+	vramAddrReg uint16bits // Active "pointer" address into nametable to extract background tile info
+	tramAddrReg uint16bits // Temporary store of information to be "transferred" into "pointer" at various times
 
 	cpuBus bus.ReadableWriteable
 	ppuBus bus.ReadableWriteable
@@ -60,7 +61,7 @@ func (cbc *cpuBusConnector) Read(addr uint16, bReadOnly bool) uint8 {
 		case 0x0000: // Control - Not readable
 		case 0x0001: // Mask - Not Readable
 		case 0x0002: // Status
-			data = (cbc.ppu.statusReg & 0xE0) | (cbc.ppu.dataBuffer) & 0x1F
+			data = (cbc.ppu.statusReg & 0xE0) | (cbc.ppu.dataBuffer)&0x1F
 			cbc.ppu.statusReg = cbc.ppu.statusReg.withBit(flagStatusVerticalBlank, false)
 			cbc.ppu.addressLatch = 0
 		case 0x0003: // OAM Address
@@ -69,7 +70,7 @@ func (cbc *cpuBusConnector) Read(addr uint16, bReadOnly bool) uint8 {
 		case 0x0006: // PPU Address - Not Readable
 		case 0x0007: // PPU Data
 			data = cbc.ppu.dataBuffer
-			cbc.ppu.dataBuffer = uint8bits(cbc.ppu.ppuBus.Read(cbc.ppu.vramAddrReg, false))
+			cbc.ppu.dataBuffer = uint8bits(cbc.ppu.ppuBus.Read(uint16(cbc.ppu.vramAddrReg), false))
 			if cbc.ppu.vramAddrReg >= 0x3F00 {
 				data = cbc.ppu.dataBuffer
 			}
@@ -85,8 +86,65 @@ func (cbc *cpuBusConnector) Read(addr uint16, bReadOnly bool) uint8 {
 }
 
 func (cbc *cpuBusConnector) Write(addr uint16, data uint8) {
-	//panic("implement me")
 	//fmt.Printf("(implement me) write addr: %04x, data: %02x\n", addr, data)
+
+	switch addr {
+	case 0x0000: // Control
+		cbc.ppu.controlReg = uint8bits(data)
+		cbc.ppu.tramAddrReg = cbc.ppu.tramAddrReg.withBit(flagLoopyNametableX,
+			cbc.ppu.controlReg.bit(flagControlNametableX))
+		cbc.ppu.tramAddrReg = cbc.ppu.tramAddrReg.withBit(flagLoopyNametableY,
+			cbc.ppu.controlReg.bit(flagControlNametableY))
+	case 0x0001: // Mask
+		cbc.ppu.maskReg = uint8bits(data)
+	case 0x0002: // Status
+	case 0x0003: // OAM Address
+	case 0x0004: // OAM Data
+	case 0x0005: // Scroll
+		if cbc.ppu.addressLatch == 0 {
+			cbc.ppu.fineX = data & 0x07
+			cbc.ppu.tramAddrReg = cbc.ppu.tramAddrReg.withBit(flagLoopyCoarseX, data >> 3)
+
+			cbc.ppu.tramAddrReg.coarse_x = data >> 3
+			cbc.ppu.addressLatch = 1
+		} else
+		{
+			// First write to scroll register contains Y offset in pixel space
+			// which we split into coarse and fine Y values
+			tram_addr.fine_y = data & 0x07
+			tram_addr.coarse_y = data >> 3
+			cbc.ppu.addressLatch = 0
+		}
+		break
+	case 0x0006: // PPU Address
+		if address_latch == 0 {
+			// PPU address bus can be accessed by CPU via the ADDR and DATA
+			// registers. The fisrt write to this register latches the high byte
+			// of the address, the second is the low byte. Note the writes
+			// are stored in the tram register...
+			tram_addr.reg = (uint16_t)((data&0x3F)<<8) | (tram_addr.reg & 0x00FF)
+			cbc.ppu.addressLatch = 1
+		} else
+		{
+			// ...when a whole address has been written, the internal vram address
+			// buffer is updated. Writing to the PPU is unwise during rendering
+			// as the PPU will maintam the vram address automatically whilst
+			// rendering the scanline position.
+			tram_addr.reg = (tram_addr.reg & 0xFF00) | data
+			vram_addr = tram_addr
+			cbc.ppu.addressLatch = 0
+		}
+		break
+	case 0x0007: // PPU Data
+		ppuWrite(vram_addr.reg, data)
+		// All writes from PPU data automatically increment the nametable
+		// address depending upon the mode set in the control register.
+		// If set to vertical mode, the increment is 32, so it skips
+		// one whole nametable row; in horizontal mode it just increments
+		// by 1, moving to the next column
+		vram_addr.reg += (control.increment_mode ? 32 : 1)
+		break
+	}
 }
 
 type ppuBusConnector struct {
