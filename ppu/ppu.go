@@ -262,6 +262,7 @@ func Create(cpuBus, ppuBus bus.ReadableWriteable) *PPU2C02 {
 		ppuBus: ppuBus,
 
 		background: image.NewRGBA(image.Rect(0, 0, 256, 240)),
+		palette: [32]uint8{34, 41, 26, 15, 15, 54, 23, 15, 15, 48, 33, 15, 15, 39},
 	}
 }
 
@@ -306,11 +307,20 @@ func (ppu *PPU2C02) renderPixel() {
 	y := int(ppu.scanline)
 	background := ppu.backgroundPixel()
 
+	var color byte
+
 	if x < 8 && ppu.flagShowLeftBackground == 0 {
 		background = 0
 	}
+	b := background%4 != 0
 
-	c := nesPalette[ppu.readPalette(uint16(background))%64]
+	if !b {
+		color = 0
+	} else if b {
+		color = background
+	}
+
+	c := nesPalette[ppu.readPalette(uint16(color))%64]
 	ppu.background.SetRGBA(x, y, c)
 }
 
@@ -415,7 +425,7 @@ func (p *PPU2C02) SetMirroring(m mirrorer) {
 	p.mirroring = m.Mirroring()
 }
 
-func (p *PPU2C02) colourFromPaletteRAM(paletteIndex uint8, pixel uint8) color.RGBA {
+func (p *PPU2C02) colorFromPaletteRAM(paletteIndex uint8, pixel uint8) color.RGBA {
 	return nesPalette[p.ppuBus.Read(0x3F00+(uint16(paletteIndex)<<2)+uint16(pixel))&0x3F]
 }
 
@@ -518,7 +528,7 @@ func (ppu *PPU2C02) writeAddress(value byte) {
 
 // $2007: PPUDATA (write)
 func (ppu *PPU2C02) writeData(value byte) {
-	ppu.ppuBus.Write(ppu.v%0x4000, value)
+	ppu.ppuBus.Write(ppu.v, value)
 	if ppu.flagIncrement == 0 {
 		ppu.v += 1
 	} else {
