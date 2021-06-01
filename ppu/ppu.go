@@ -7,10 +7,10 @@ import (
 )
 
 const (
-	HORIZONTAL = iota
-	VERTICAL
-	ONESCREEN_LO
-	ONESCREEN_HI
+	HORIZONTAL   = 0
+	VERTICAL     = 1
+	ONESCREEN_LO = 2
+	ONESCREEN_HI = 3
 )
 
 type PPU2C02 struct {
@@ -44,13 +44,6 @@ type PPU2C02 struct {
 	highTileByte       byte
 	tileData           uint64
 
-	// sprite temporary variables
-	spriteCount      int
-	spritePatterns   [8]uint32
-	spritePositions  [8]byte
-	spritePriorities [8]byte
-	spriteIndexes    [8]byte
-
 	// $2000 PPUCTRL
 	flagNameTable       byte // 0: $2000; 1: $2400; 2: $2800; 3: $2C00
 	flagIncrement       byte // 0: add 1; 1: add 32
@@ -58,7 +51,6 @@ type PPU2C02 struct {
 	flagBackgroundTable byte // 0: $0000; 1: $1000
 	flagSpriteSize      byte // 0: 8x8; 1: 8x16
 	flagMasterSlave     byte // 0: read EXT; 1: write EXT
-	flagEnableNMI       byte
 
 	// $2001 PPUMASK
 	flagGrayscale          byte // 0: color; 1: grayscale
@@ -73,7 +65,6 @@ type PPU2C02 struct {
 	// $2002 PPUSTATUS
 	flagSpriteZeroHit  byte
 	flagSpriteOverflow byte
-	flagVerticalBlank  byte
 
 	// $2003 OAMADDR
 	oamAddress byte
@@ -94,8 +85,11 @@ type PPU2C02 struct {
 	bgShifterAttribLo  uint16
 	bgShifterAttribHi  uint16
 
-	//
-	nmi bool
+	// NMI flags
+	nmiOccurred bool
+	nmiOutput   bool
+	nmiPrevious bool
+	nmiDelay    byte
 }
 
 type mirrorer interface {
@@ -270,122 +264,121 @@ func Create(cpuBus, ppuBus bus.ReadableWriteable) *PPU2C02 {
 }
 
 func (ppu *PPU2C02) Reset() {
-	ppu.cycle = 0
-	ppu.scanline = 241
+	ppu.cycle = 340
+	ppu.scanline = 240
 	ppu.writeControl(0)
 	ppu.writeMask(0)
 	//ppu.writeOAMAddress(0)
 }
 
-func (ppu *PPU2C02) Clock() {
-	if ppu.scanline >= -1 && ppu.scanline < 240 {
-		if ppu.scanline == 0 && ppu.cycle == 0 {
-			ppu.cycle = 1
-		}
-
-		if ppu.scanline == -1 && ppu.cycle == 1 {
-			ppu.flagVerticalBlank = 0
-		}
-
-		if (ppu.cycle >= 2 && ppu.cycle < 258) || (ppu.cycle >= 321 && ppu.cycle < 338) {
-			ppu.updateShifters()
-
-			nametableX := ppu.v >> 10 & 1
-			nametableY := ppu.v >> 11 & 1
-			coarseX := ppu.v & 0b11111
-			coarseY := ppu.v >> 5 & 0b11111
-			fineY := uint8(ppu.v >> 12 & 0b111)
-			patternBackground := uint16(0)
-
-			switch (ppu.cycle - 1) % 8 {
-			case 0:
-				ppu.loadBackgroundShifters()
-				ppu.bgNextTileId = ppu.ppuBus.Read(0x2000 | (ppu.v & 0x0FFF))
-			case 2:
-				ppu.bgNextTileAttrib = ppu.ppuBus.Read(0x23C0 | (nametableY << 11) | (nametableX << 10) | ((coarseY >> 2) << 3) | (coarseX >> 2))
-
-				if coarseY&0x02 > 0 {
-					ppu.bgNextTileAttrib >>= 4
-				}
-				if coarseX&0x02 > 0 {
-					ppu.bgNextTileAttrib >>= 2
-				}
-				ppu.bgNextTileAttrib &= 0x03
-			case 4:
-				ppu.bgNextTileLsb = ppu.ppuBus.Read(patternBackground<<12) + (ppu.bgNextTileId << 4) + fineY
-			case 6:
-				ppu.bgNextTileMsb = ppu.ppuBus.Read(patternBackground<<12) + (ppu.bgNextTileId << 4) + fineY + 8
-			case 7:
-				ppu.incrementScrollX()
-			}
-		}
-
-		if ppu.cycle == 256 {
-			ppu.incrementScrollY()
-		}
-
-		if ppu.cycle == 257 {
-			ppu.loadBackgroundShifters()
-			ppu.transferAddressX()
-		}
-
-		if ppu.cycle == 338 || ppu.cycle == 340 {
-			ppu.bgNextTileId = ppu.ppuBus.Read(0x2000 | (ppu.v & 0x0FFF))
-		}
-
-		if ppu.scanline == -1 && ppu.cycle >= 280 && ppu.cycle < 305 {
-			ppu.transferAddressY()
-		}
-
-	} else if ppu.scanline == 240 {
-		// Post Render Scanline - Do Nothing!
-	} else if ppu.scanline >= 241 && ppu.scanline < 261 {
-		if ppu.scanline == 241 && ppu.cycle == 1 {
-			ppu.flagVerticalBlank = 1
-			if ppu.flagEnableNMI > 0 {
-				ppu.nmi = true
-			}
+func (ppu *PPU2C02) tick() {
+	if ppu.flagShowBackground != 0 || ppu.flagShowSprites != 0 {
+		if ppu.f == 1 && ppu.scanline == 261 && ppu.cycle == 339 {
+			ppu.cycle = 0
+			ppu.scanline = 0
+			ppu.f ^= 1
+			return
 		}
 	}
-
-	var bgPixel uint8
-	var bgPalette uint8
-
-	if ppu.flagShowBackground > 0 {
-		bitMux := uint16(0x8000 >> ppu.x)
-
-		var p0pixel, p1pixel uint8
-		if ppu.bgShifterPatternLo&bitMux > 0 {
-			p0pixel = 1
-		}
-		if ppu.bgShifterPatternHi&bitMux > 0 {
-			p1pixel = 1
-		}
-
-		bgPixel = (p1pixel << 1) | p0pixel
-
-		var bgPal0, bgPal1 uint8
-		if ppu.bgShifterAttribLo&bitMux > 0 {
-			bgPal0 = 1
-		}
-
-		if ppu.bgShifterAttribHi&bitMux > 0 {
-			bgPal1 = 1
-		}
-
-		bgPalette = (bgPal1 << 1) | bgPal0
-	}
-
-	ppu.background.Set(int(ppu.cycle-1), int(ppu.scanline), ppu.colourFromPaletteRAM(bgPixel, bgPalette))
 
 	ppu.cycle++
-	if ppu.cycle >= 341 {
+	if ppu.cycle > 340 {
 		ppu.cycle = 0
 		ppu.scanline++
-		if ppu.scanline >= 261 {
-			ppu.scanline = -1
-			ppu.frameComplete = true
+		if ppu.scanline > 261 {
+			ppu.scanline = 0
+			ppu.f ^= 1
 		}
+	}
+}
+
+func (ppu *PPU2C02) renderPixel() {
+	x := int(ppu.cycle - 1)
+	y := int(ppu.scanline)
+	background := ppu.backgroundPixel()
+
+	if x < 8 && ppu.flagShowLeftBackground == 0 {
+		background = 0
+	}
+
+	c := nesPalette[ppu.readPalette(uint16(background))%64]
+	ppu.background.SetRGBA(x, y, c)
+}
+
+func (ppu *PPU2C02) backgroundPixel() byte {
+	if ppu.flagShowBackground == 0 {
+		return 0
+	}
+	data := ppu.fetchTileData() >> ((7 - ppu.x) * 4)
+	return byte(data & 0x0F)
+}
+
+func (ppu *PPU2C02) fetchTileData() uint32 {
+	return uint32(ppu.tileData >> 32)
+}
+
+func (ppu *PPU2C02) Clock() {
+	ppu.tick()
+
+	renderingEnabled := ppu.flagShowBackground != 0 || ppu.flagShowSprites != 0
+	preLine := ppu.scanline == 261
+	visibleLine := ppu.scanline < 240
+
+	renderLine := preLine || visibleLine
+	preFetchCycle := ppu.cycle >= 321 && ppu.cycle <= 336
+	visibleCycle := ppu.cycle >= 1 && ppu.cycle <= 256
+	fetchCycle := preFetchCycle || visibleCycle
+
+	// background logic
+	if renderingEnabled {
+		if visibleLine && visibleCycle {
+			ppu.renderPixel()
+		}
+		if renderLine && fetchCycle {
+			ppu.tileData <<= 4
+			switch ppu.cycle % 8 {
+			case 1:
+				ppu.fetchNameTableByte()
+			case 3:
+				ppu.fetchAttributeTableByte()
+			case 5:
+				ppu.fetchLowTileByte()
+			case 7:
+				ppu.fetchHighTileByte()
+			case 0:
+				ppu.storeTileData()
+			}
+		}
+		if preLine && ppu.cycle >= 280 && ppu.cycle <= 304 {
+			ppu.transferAddressY()
+		}
+		if renderLine {
+			if fetchCycle && ppu.cycle%8 == 0 {
+				ppu.incrementScrollX()
+			}
+			if ppu.cycle == 256 {
+				ppu.incrementScrollY()
+			}
+			if ppu.cycle == 257 {
+				ppu.transferAddressX()
+			}
+		}
+	}
+
+	// TODO sprite logic
+
+	// vblank logic
+	if ppu.scanline == 241 && ppu.cycle == 1 {
+		ppu.setVerticalBlank()
+	}
+	if preLine && ppu.cycle == 1 {
+		ppu.clearVerticalBlank()
+		ppu.flagSpriteZeroHit = 0
+		ppu.flagSpriteOverflow = 0
+	}
+
+	if preLine && ppu.cycle == 340 {
+		ppu.frameComplete = true
 	}
 }
 
@@ -422,14 +415,11 @@ func (ppu *PPU2C02) readStatus() byte {
 	result := ppu.register & 0x1F
 	result |= ppu.flagSpriteOverflow << 5
 	result |= ppu.flagSpriteZeroHit << 6
-
-	result |= ppu.flagVerticalBlank << 7
-
-	/*if ppu.nmiOccurred {
+	if ppu.nmiOccurred {
 		result |= 1 << 7
 	}
 	ppu.nmiOccurred = false
-	ppu.nmiChange()*/
+	ppu.nmiChange()
 	// w:                   = 0
 	ppu.w = 0
 	return result
@@ -437,7 +427,7 @@ func (ppu *PPU2C02) readStatus() byte {
 
 // $2007: PPUDATA (read)
 func (ppu *PPU2C02) readData() byte {
-	value := ppu.ppuBus.Read(ppu.v % 0x4000)
+	value := ppu.ppuBus.Read(ppu.v)
 	// emulate buffered reads
 	if ppu.v%0x4000 < 0x3F00 {
 		buffered := ppu.bufferedData
@@ -463,10 +453,8 @@ func (ppu *PPU2C02) writeControl(value byte) {
 	ppu.flagBackgroundTable = (value >> 4) & 1
 	ppu.flagSpriteSize = (value >> 5) & 1
 	ppu.flagMasterSlave = (value >> 6) & 1
-
-	ppu.flagEnableNMI = (value >> 7) & 1
-	//ppu.nmiOutput = (value>>7)&1 == 1
-	//ppu.nmiChange()
+	ppu.nmiOutput = (value>>7)&1 == 1
+	ppu.nmiChange()
 	// t: ....BA.. ........ = d: ......BA
 	ppu.t = (ppu.t & 0xF3FF) | ((uint16(value) & 0x03) << 10)
 }
@@ -521,7 +509,7 @@ func (ppu *PPU2C02) writeAddress(value byte) {
 
 // $2007: PPUDATA (write)
 func (ppu *PPU2C02) writeData(value byte) {
-	ppu.ppuBus.Write(ppu.v % 0x4000, value)
+	ppu.ppuBus.Write(ppu.v%0x4000, value)
 	if ppu.flagIncrement == 0 {
 		ppu.v += 1
 	} else {
@@ -584,32 +572,73 @@ func (ppu *PPU2C02) transferAddressY() {
 	ppu.v = (ppu.v & 0x841F) | (ppu.t & 0x7BE0)
 }
 
-func (ppu *PPU2C02) loadBackgroundShifters() {
-	ppu.bgShifterPatternLo = ppu.bgShifterPatternLo&0xFF00 | uint16(ppu.bgNextTileLsb)
-	ppu.bgShifterPatternHi = ppu.bgShifterPatternHi&0xFF00 | uint16(ppu.bgNextTileMsb)
-
-	var c uint16
-	if ppu.bgNextTileAttrib&0b01 > 0 {
-		c = 0xFF
-	}
-	ppu.bgShifterAttribLo = ppu.bgShifterAttribLo&0xFF00 | c
-
-	c = 0
-	if ppu.bgNextTileAttrib&0b10 > 0 {
-		c = 0xFF
-	}
-	ppu.bgShifterAttribHi = ppu.bgShifterAttribHi&0xFF00 | c
-
+func (ppu *PPU2C02) setVerticalBlank() {
+	//ppu.front, ppu.back = ppu.back, ppu.front
+	ppu.nmiOccurred = true
+	ppu.nmiChange()
 }
 
-func (ppu *PPU2C02) updateShifters() {
-	if ppu.flagShowBackground > 0 {
-		// Shifting background tile pattern row
-		ppu.bgShifterPatternLo <<= 1
-		ppu.bgShifterPatternHi <<= 1
+func (ppu *PPU2C02) clearVerticalBlank() {
+	ppu.nmiOccurred = false
+	ppu.nmiChange()
+}
 
-		// Shifting palette attributes by 1
-		ppu.bgShifterAttribLo <<= 1
-		ppu.bgShifterAttribHi <<= 1
+func (ppu *PPU2C02) nmiChange() {
+	nmi := ppu.nmiOutput && ppu.nmiOccurred
+	if nmi && !ppu.nmiPrevious {
+		// TODO: this fixes some games but the delay shouldn't have to be so
+		// long, so the timings are off somewhere
+		ppu.nmiDelay = 15
 	}
+	ppu.nmiPrevious = nmi
+}
+
+func (ppu *PPU2C02) fetchNameTableByte() {
+	v := ppu.v
+	address := 0x2000 | (v & 0x0FFF)
+	ppu.nameTableByte = ppu.ppuBus.Read(address)
+}
+
+func (ppu *PPU2C02) fetchAttributeTableByte() {
+	v := ppu.v
+	address := 0x23C0 | (v & 0x0C00) | ((v >> 4) & 0x38) | ((v >> 2) & 0x07)
+	shift := ((v >> 4) & 4) | (v & 2)
+	ppu.attributeTableByte = ((ppu.ppuBus.Read(address) >> shift) & 3) << 2
+}
+
+func (ppu *PPU2C02) fetchLowTileByte() {
+	fineY := (ppu.v >> 12) & 7
+	table := ppu.flagBackgroundTable
+	tile := ppu.nameTableByte
+	address := 0x1000*uint16(table) + uint16(tile)*16 + fineY
+	ppu.lowTileByte = ppu.ppuBus.Read(address)
+}
+
+func (ppu *PPU2C02) fetchHighTileByte() {
+	fineY := (ppu.v >> 12) & 7
+	table := ppu.flagBackgroundTable
+	tile := ppu.nameTableByte
+	address := 0x1000*uint16(table) + uint16(tile)*16 + fineY
+	ppu.highTileByte = ppu.ppuBus.Read(address + 8)
+}
+
+func (ppu *PPU2C02) storeTileData() {
+	var data uint32
+	for i := 0; i < 8; i++ {
+		a := ppu.attributeTableByte
+		p1 := (ppu.lowTileByte & 0x80) >> 7
+		p2 := (ppu.highTileByte & 0x80) >> 6
+		ppu.lowTileByte <<= 1
+		ppu.highTileByte <<= 1
+		data <<= 4
+		data |= uint32(a | p1 | p2)
+	}
+	ppu.tileData |= uint64(data)
+}
+
+func (ppu *PPU2C02) readPalette(address uint16) byte {
+	if address >= 16 && address%4 == 0 {
+		address -= 16
+	}
+	return ppu.palette[address]
 }
