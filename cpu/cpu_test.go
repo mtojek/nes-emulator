@@ -61,9 +61,9 @@ func TestCPU_BasicCode(t *testing.T) {
 	cpuBus.Print(standardCodeLocation, standardCodeLocation+0x00FF)
 
 	// then
-	require.Equal(t, cpuBus.Read(0x0000, true), uint8(0x0A))
-	require.Equal(t, cpuBus.Read(0x0001, true), uint8(0x03))
-	require.Equal(t, cpuBus.Read(0x0002, true), uint8(0x1E))
+	require.Equal(t, cpuBus.Read(0x0000), uint8(0x0A))
+	require.Equal(t, cpuBus.Read(0x0001), uint8(0x03))
+	require.Equal(t, cpuBus.Read(0x0002), uint8(0x1E))
 }
 
 func loadIntoRAM(t *testing.T, ram bus.Writeable, offset uint16, code string) {

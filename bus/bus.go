@@ -23,7 +23,7 @@ type ReadableWriteable interface {
 }
 
 type Readable interface {
-	Read(addr uint16, bReadOnly bool) uint8
+	Read(addr uint16) uint8
 }
 
 type Writeable interface {
@@ -38,14 +38,14 @@ func (b *Bus) Connect(addrFrom, addrTo uint16, rw ReadableWriteable) {
 	})
 }
 
-func (b *Bus) Read(addr uint16, bReadOnly bool) uint8 {
+func (b *Bus) Read(addr uint16) uint8 {
 	for _, m := range b.maps {
 		if m.from <= addr && addr <= m.to {
-			return m.rw.Read(addr, bReadOnly)
+			return m.rw.Read(addr)
 		}
 	}
 
-	log.Printf("unmapped memory range, zero read from the Bus (addr: %#04x, readOnly: %t)\n", addr, bReadOnly)
+	log.Printf("unmapped memory range, zero read from the Bus (addr: %#04x)\n", addr)
 	return 0
 }
 
@@ -57,7 +57,7 @@ func (b *Bus) Write(addr uint16, data uint8) {
 		}
 	}
 
-	log.Printf("unmapped memory range, nothing written to the Bus (addr: %#04x, data: %#04x)\n", addr, data)
+	log.Printf("unmapped memory range, nothing written to the Bus (addr: %#04x, data: %#02x)\n", addr, data)
 }
 
 func (b *Bus) Print(from, to uint16) {
@@ -65,7 +65,7 @@ func (b *Bus) Print(from, to uint16) {
 		if offset%16 == 0 {
 			fmt.Printf("%04X: ", offset)
 		}
-		fmt.Printf("%02X ", b.Read(offset, true))
+		fmt.Printf("%02X ", b.Read(offset))
 
 		if offset%16 == 15 {
 			fmt.Println()

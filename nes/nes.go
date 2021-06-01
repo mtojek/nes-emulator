@@ -27,18 +27,19 @@ func Create() *NES {
 	// CPU
 	aCPU := cpu.Create(&cpuBus)
 
-	cpuBus.Connect(0x0000, 0x1FFF, memory.CreateMirroring(memory.CreateMemory(), 0x07FF))
+	cpuBus.Connect(0x0000, 0x1FFF, memory.CreateMirroring(memory.CreateMemory(), 0x0000, 0x07FF))
 
 	// PPU
 	aPPU := ppu.Create(&cpuBus, &ppuBus)
 
 	ppuBusConnector := aPPU.PPUBusConnector()
-	ppuBus.Connect(0x0000, 0x1FFF, ppuBusConnector)
-	ppuBus.Connect(0x2000, 0x3EFF, memory.CreateMirroring(ppuBusConnector, 0x0FFF))
-	ppuBus.Connect(0x3F00, 0x3FFF, memory.CreateMirroring(ppuBusConnector, 0x0FFF))
+	//ppuBus.Connect(0x0000, 0x1FFF, ppuBusConnector)
+	ppuBus.Connect(0x2000, 0x3EFF, memory.CreateMirroring(ppuBusConnector, 0x2000,0x0FFF))
+	ppuBus.Connect(0x3F00, 0x3FFF, memory.CreateMirroring(ppuBusConnector, 0x3F00,0x0FFF))
+	ppuBus.Connect(0x0000, 0x4000, memory.CreateMirroring(ppuBusConnector, 0x0000, 0x4000))
 
 	cpuBusConnector := aPPU.CPUBusConnector()
-	cpuBus.Connect(0x2000, 0x3FFF, memory.CreateMirroring(cpuBusConnector, 0x001F))
+	cpuBus.Connect(0x2000, 0x3FFF, memory.CreateMirroring(cpuBusConnector, 0x2000, 0x001F))
 
 	return &NES{
 		cpuBus: &cpuBus,
@@ -51,10 +52,12 @@ func Create() *NES {
 
 func (n *NES) Insert(cart *cartridge.Cartridge) {
 	cart.ConnectTo(n.cpuBus, n.ppuBus)
+	n.ppu.SetMirroring(cart)
 }
 
 func (n *NES) Reset() {
 	n.cpu.Reset()
+	n.ppu.Reset()
 	n.systemClock = 0
 }
 

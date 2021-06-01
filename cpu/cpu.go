@@ -53,6 +53,8 @@ func (c *CPU6502) Clock() {
 		c.pc++
 
 		ins := c.lookupOpcodes[c.opcode]
+		//fmt.Printf("%s (%02x) %s\n", ins.name, c.opcode, ins.addressing.name)
+
 		c.cycles = ins.cycles
 		c1 := ins.addressing.do()
 		c2 := ins.operationDo()
@@ -62,7 +64,7 @@ func (c *CPU6502) Clock() {
 }
 
 func (c *CPU6502) read(addr uint16) uint8 {
-	return c.bus.Read(addr, true)
+	return c.bus.Read(addr)
 }
 
 func (c *CPU6502) write(addr uint16, data uint8) {

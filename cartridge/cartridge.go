@@ -10,13 +10,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	HORIZONTAL = iota
-	VERTICAL
-	ONESCREEN_LO
-	ONESCREEN_HI
-)
-
 type Cartridge struct {
 	vPRGMemory []uint8
 	vCHRMemory []uint8
@@ -40,7 +33,7 @@ type chrMemoryHandler struct {
 
 var _ bus.ReadableWriteable = new(chrMemoryHandler)
 
-func (mh *prgMemoryHandler) Read(addr uint16, bReadOnly bool) uint8 {
+func (mh *prgMemoryHandler) Read(addr uint16) uint8 {
 	mapped := mh.c.mapper.MapCPU(addr)
 	return mh.c.vPRGMemory[mapped]
 }
@@ -50,7 +43,7 @@ func (mh *prgMemoryHandler) Write(addr uint16, data uint8) {
 	mh.c.vPRGMemory[mapped] = data
 }
 
-func (mh *chrMemoryHandler) Read(addr uint16, bReadOnly bool) uint8 {
+func (mh *chrMemoryHandler) Read(addr uint16) uint8 {
 	mapped := mh.c.mapper.MapPPU(addr)
 	return mh.c.vCHRMemory[mapped]
 }
@@ -131,4 +124,8 @@ func (c *Cartridge) chr() bus.ReadableWriteable {
 
 func (c *Cartridge) ConnectTo(cpuBus *bus.Bus, ppuBus *bus.Bus) {
 	c.mapper.ConnectTo(cpuBus, ppuBus, c.prg(), c.chr())
+}
+
+func (c *Cartridge) Mirroring() uint8 {
+	return c.mirror
 }

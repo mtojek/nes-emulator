@@ -29,6 +29,6 @@ func (r *Memory) Write(addr uint16, data uint8) {
 	r.blob[addr-r.startOffset] = data
 }
 
-func (r *Memory) Read(addr uint16, _ bool) uint8 {
+func (r *Memory) Read(addr uint16) uint8 {
 	return r.blob[addr-r.startOffset]
 }
