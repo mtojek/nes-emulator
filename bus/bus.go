@@ -2,7 +2,6 @@ package bus
 
 import (
 	"fmt"
-	"log"
 )
 
 type Bus struct {
@@ -45,7 +44,7 @@ func (b *Bus) Read(addr uint16) uint8 {
 		}
 	}
 
-	log.Printf("unmapped memory range, zero read from the Bus (addr: %#04x)\n", addr)
+	//log.Printf("unmapped memory range, zero read from the Bus (addr: %#04x)\n", addr)
 	return 0
 }
 
@@ -57,7 +56,7 @@ func (b *Bus) Write(addr uint16, data uint8) {
 		}
 	}
 
-	log.Printf("unmapped memory range, nothing written to the Bus (addr: %#04x, data: %#02x)\n", addr, data)
+	//log.Printf("unmapped memory range, nothing written to the Bus (addr: %#04x, data: %#02x)\n", addr, data)
 }
 
 func (b *Bus) Print(from, to uint16) {

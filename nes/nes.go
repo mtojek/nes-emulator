@@ -63,9 +63,16 @@ func (n *NES) Reset() {
 
 func (n *NES) Clock() {
 	n.ppu.Clock()
+
 	if n.systemClock%3 == 0 {
 		n.cpu.Clock()
 	}
+
+	if n.ppu.TriggerNMI {
+		n.ppu.TriggerNMI = false
+		n.cpu.NMI()
+	}
+
 	n.systemClock++
 }
 

@@ -394,6 +394,24 @@ func (c *CPU6502) nop() uint8 {
 	return 0
 }
 
+func (c *CPU6502) NMI() {
+	c.write(0x0100+uint16(c.sp), uint8(c.pc>>8))
+	c.sp--
+	c.write(0x0100+uint16(c.sp), uint8(c.pc))
+	c.sp--
+
+	c.setFlag(flagB, false)
+	c.setFlag(flagU, true)
+	c.setFlag(flagI, true)
+
+	c.write(0x0100+uint16(c.sp), c.status)
+	c.sp--
+
+	addr := uint16(0xFFFA)
+	c.pc = uint16(c.read(addr)) | uint16(c.read(addr + 1))<<8
+	c.cycles = 8
+}
+
 // Bitwise Logic OR
 func (c *CPU6502) ora() uint8 {
 	c.fetch()

@@ -90,6 +90,8 @@ type PPU2C02 struct {
 	nmiOutput   bool
 	nmiPrevious bool
 	nmiDelay    byte
+
+	TriggerNMI bool
 }
 
 type mirrorer interface {
@@ -272,6 +274,13 @@ func (ppu *PPU2C02) Reset() {
 }
 
 func (ppu *PPU2C02) tick() {
+	if ppu.nmiDelay > 0 {
+		ppu.nmiDelay--
+		if ppu.nmiDelay == 0 && ppu.nmiOutput && ppu.nmiOccurred {
+			ppu.TriggerNMI = true
+		}
+	}
+
 	if ppu.flagShowBackground != 0 || ppu.flagShowSprites != 0 {
 		if ppu.f == 1 && ppu.scanline == 261 && ppu.cycle == 339 {
 			ppu.cycle = 0
