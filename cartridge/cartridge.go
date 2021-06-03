@@ -2,6 +2,7 @@ package cartridge
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
 	"os"
 
@@ -45,11 +46,26 @@ func (mh *prgMemoryHandler) Write(addr uint16, data uint8) {
 
 func (mh *chrMemoryHandler) Read(addr uint16) uint8 {
 	mapped := mh.c.mapper.MapPPU(addr)
+	if uint16(len(mh.c.vCHRMemory)) < mapped {
+		fmt.Println("BUG read: should be handled by memory not cart")
+		return 0
+	} else if len(mh.c.vCHRMemory) == 0 {
+		fmt.Println("BUG read: no CHR present")
+		return 0
+	}
 	return mh.c.vCHRMemory[mapped]
 }
 
 func (mh *chrMemoryHandler) Write(addr uint16, data uint8) {
 	mapped := mh.c.mapper.MapPPU(addr)
+
+	if uint16(len(mh.c.vCHRMemory)) < mapped {
+		fmt.Println("BUG write: should be handled by memory not cart")
+		return
+	} else if len(mh.c.vCHRMemory) == 0 {
+		fmt.Println("BUG write: no CHR present")
+		return
+	}
 	mh.c.vCHRMemory[mapped] = data
 }
 

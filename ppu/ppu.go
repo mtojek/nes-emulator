@@ -123,6 +123,8 @@ func (cbc *cpuBusConnector) Read(addr uint16) uint8 {
 
 func (cbc *cpuBusConnector) Write(addr uint16, data uint8) {
 	//fmt.Printf("(implement me) write addr: %04x, data: %02x\n", addr, data)
+	//fmt.Printf("cpuBus write %04X\n", addr)
+
 	cbc.ppu.register = data
 	switch addr {
 	case 0x2000: // Control
@@ -206,6 +208,7 @@ func (pbc *ppuBusConnector) Read(addr uint16) uint8 {
 }
 
 func (pbc *ppuBusConnector) Write(addr uint16, data uint8) {
+	//fmt.Printf("ppuBus write %04X\n", addr)
 	//fmt.Printf("(implement me) write addr: %04x, data: %02x\n", addr, data)
 
 	addr &= 0x3FFF
@@ -262,7 +265,6 @@ func Create(cpuBus, ppuBus bus.ReadableWriteable) *PPU2C02 {
 		ppuBus: ppuBus,
 
 		background: image.NewRGBA(image.Rect(0, 0, 256, 240)),
-		palette: [32]uint8{34, 41, 26, 15, 15, 54, 23, 15, 15, 48, 33, 15, 15, 39},
 	}
 }
 

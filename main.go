@@ -36,9 +36,9 @@ func main() {
 	defer ui.Terminate(window)
 
 	for !window.ShouldClose() {
-		console.DrawNewFrame()
-
 		startFrameTime := time.Now()
+
+		console.DrawNewFrame()
 		// PPU processing
 		for !console.FrameComplete() {
 			console.Clock()
@@ -48,7 +48,7 @@ func main() {
 		ui.Redraw(window, tex, console.Buffer())
 
 		processingDuration := time.Now().Sub(startFrameTime)
-		waitingTime := time.Second/60 - processingDuration
+		waitingTime := time.Second/30 - processingDuration // FIXME timing
 
 		if waitingTime > 0 {
 			fmt.Printf("Sleep for: %v\n", waitingTime)

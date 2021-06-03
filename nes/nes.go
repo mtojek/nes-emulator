@@ -32,12 +32,12 @@ func Create() *NES {
 	// PPU
 	aPPU := ppu.Create(&cpuBus, &ppuBus)
 
+	cpuBusConnector := aPPU.CPUBusConnector()
+	cpuBus.Connect(0x2000, 0x3FFF, memory.CreateMirroring(cpuBusConnector, 0x2000, 0x07))
+
 	ppuBusConnector := aPPU.PPUBusConnector()
 	ppuBus.Connect(0x2000, 0x3EFF, memory.CreateMirroring(ppuBusConnector, 0x2000,0x0FFF))
-	ppuBus.Connect(0x3F00, 0x3FFF, memory.CreateMirroring(ppuBusConnector, 0x3F00,0x0FFF))
-
-	cpuBusConnector := aPPU.CPUBusConnector()
-	cpuBus.Connect(0x2000, 0x3FFF, memory.CreateMirroring(cpuBusConnector, 0x2000, 0x001F))
+	ppuBus.Connect(0x3F00, 0x3FFF, memory.CreateMirroring(ppuBusConnector, 0x3F00,0x1F))
 
 	return &NES{
 		cpuBus: &cpuBus,
