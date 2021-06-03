@@ -12,6 +12,8 @@ import (
 	"github.com/mtojek/nes-emulator/ui"
 )
 
+var keysPlayer2 [8]bool // TODO: unimplemented
+
 func main() {
 	flag.Parse()
 
@@ -43,6 +45,10 @@ func main() {
 		for !console.FrameComplete() {
 			console.Clock()
 		}
+
+		// Read controller keys
+		keysPlayer1 := ui.ReadKeysPlayer1(window)
+		console.UpdateControllers(keysPlayer1, keysPlayer2)
 
 		// OpenGL processing
 		ui.Redraw(window, tex, console.Buffer())

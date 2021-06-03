@@ -1,6 +1,7 @@
 package nes
 
 import (
+	"github.com/mtojek/nes-emulator/controller"
 	"image"
 
 	"github.com/mtojek/nes-emulator/bus"
@@ -18,16 +19,25 @@ type NES struct {
 
 	cpu *cpu.CPU6502
 	ppu *ppu.PPU2C02
+
+	player1 *controller.Controller
+	player2 *controller.Controller
 }
 
 func Create() *NES {
 	var cpuBus bus.Bus
 	var ppuBus bus.Bus
 
+	// Controllers
+	player1 := controller.NewController()
+	player2 := controller.NewController()
+
 	// CPU
 	aCPU := cpu.Create(&cpuBus)
 
 	cpuBus.Connect(0x0000, 0x1FFF, memory.CreateMirroring(memory.CreateMemory(), 0x0000, 0x07FF))
+	cpuBus.Connect(0x4016, 0x4016, player1)
+	cpuBus.Connect(0x4017, 0x4017, player2)
 
 	// PPU
 	aPPU := ppu.Create(&cpuBus, &ppuBus)
@@ -36,8 +46,8 @@ func Create() *NES {
 	cpuBus.Connect(0x2000, 0x3FFF, memory.CreateMirroring(cpuBusConnector, 0x2000, 0x07))
 
 	ppuBusConnector := aPPU.PPUBusConnector()
-	ppuBus.Connect(0x2000, 0x3EFF, memory.CreateMirroring(ppuBusConnector, 0x2000,0x0FFF))
-	ppuBus.Connect(0x3F00, 0x3FFF, memory.CreateMirroring(ppuBusConnector, 0x3F00,0x1F))
+	ppuBus.Connect(0x2000, 0x3EFF, memory.CreateMirroring(ppuBusConnector, 0x2000, 0x0FFF))
+	ppuBus.Connect(0x3F00, 0x3FFF, memory.CreateMirroring(ppuBusConnector, 0x3F00, 0x1F))
 
 	return &NES{
 		cpuBus: &cpuBus,
@@ -45,6 +55,9 @@ func Create() *NES {
 
 		cpu: aCPU,
 		ppu: aPPU,
+
+		player1: player1,
+		player2: player2,
 	}
 }
 
@@ -84,4 +97,9 @@ func (n *NES) DrawNewFrame() {
 
 func (n *NES) Buffer() *image.RGBA {
 	return n.ppu.Buffer()
+}
+
+func (n *NES) UpdateControllers(state1, state2 [8]bool) {
+	n.player1.SetState(state1)
+	n.player2.SetState(state2)
 }

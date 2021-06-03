@@ -408,7 +408,7 @@ func (c *CPU6502) NMI() {
 	c.sp--
 
 	addr := uint16(0xFFFA)
-	c.pc = uint16(c.read(addr)) | uint16(c.read(addr + 1))<<8
+	c.pc = uint16(c.read(addr)) | uint16(c.read(addr+1))<<8
 	c.cycles = 8
 }
 
