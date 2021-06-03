@@ -512,10 +512,9 @@ func (c *CPU6502) rts() uint8 {
 // Subtract with Borrow In
 func (c *CPU6502) sbc() uint8 {
 	c.fetch()
-	value := uint16(c.fetched) ^ 0x00FF
-	t := uint16(c.a) + value + uint16(c.getFlag(flagC))
-	c.setFlag(flagC, t > 255)
-	c.setFlag(flagV, (uint16(c.a)^uint16(c.fetched))&0x0080 == 0 && (uint16(c.a)^t)&0x0080 != 0)
+	t := int(c.a) - int(c.fetched) - (1 - int(c.getFlag(flagC)))
+	c.setFlag(flagC, t >= 0)
+	c.setFlag(flagV, (uint16(c.a)^uint16(c.fetched))&0x0080 != 0 && (uint16(c.a)^uint16(t))&0x0080 != 0)
 	c.setFlagZ(uint8(t))
 	c.setFlagN(uint8(t))
 	c.a = uint8(t)
