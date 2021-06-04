@@ -40,7 +40,7 @@ func Create() *NES {
 	cpuBus.Connect(0x4017, 0x4017, player2)
 
 	// PPU
-	aPPU := ppu.Create(&cpuBus, &ppuBus)
+	aPPU := ppu.Create(&cpuBus, &ppuBus, aCPU)
 
 	cpuBusConnector := aPPU.CPUBusConnector()
 	cpuBus.Connect(0x2000, 0x3FFF, memory.CreateMirroring(cpuBusConnector, 0x2000, 0x07))

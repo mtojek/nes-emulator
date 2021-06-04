@@ -93,10 +93,17 @@ type PPU2C02 struct {
 	nmiDelay    byte
 
 	TriggerNMI bool
+
+	// DMA
+	dmaMode dmaModer
 }
 
 type mirrorer interface {
 	Mirroring() uint8
+}
+
+type dmaModer interface {
+	DMAMode()
 }
 
 type cpuBusConnector struct {
@@ -265,10 +272,11 @@ func (pbc *ppuBusConnector) Write(addr uint16, data uint8) {
 
 var _ bus.ReadableWriteable = new(cpuBusConnector)
 
-func Create(cpuBus, ppuBus bus.ReadableWriteable) *PPU2C02 {
+func Create(cpuBus, ppuBus bus.ReadableWriteable, dmaModer dmaModer) *PPU2C02 {
 	return &PPU2C02{
 		cpuBus: cpuBus,
 		ppuBus: ppuBus,
+		dmaMode: dmaModer,
 
 		background: image.NewRGBA(image.Rect(0, 0, 256, 240)),
 	}
@@ -678,7 +686,11 @@ func (ppu *PPU2C02) writeOAMAddress(value byte) {
 
 // $2004: OAMDATA (read)
 func (ppu *PPU2C02) readOAMData() byte {
-	return ppu.oamData[ppu.oamAddress]
+	data := ppu.oamData[ppu.oamAddress]
+	if (ppu.oamAddress & 0x03) == 0x02 {
+		data = data & 0xE3
+	}
+	return data
 }
 
 // $2004: OAMDATA (write)
@@ -689,15 +701,11 @@ func (ppu *PPU2C02) writeOAMData(value byte) {
 
 // $4014: OAMDMA
 func (ppu *PPU2C02) writeDMA(value byte) {
-	cpu := ppu.console.CPU
 	address := uint16(value) << 8
 	for i := 0; i < 256; i++ {
-		ppu.oamData[ppu.oamAddress] = cpu.Read(address)
+		ppu.oamData[ppu.oamAddress] = ppu.cpuBus.Read(address)
 		ppu.oamAddress++
 		address++
 	}
-	cpu.stall += 513
-	if cpu.Cycles%2 == 1 {
-		cpu.stall++
-	}
+	ppu.dmaMode.DMAMode()
 }

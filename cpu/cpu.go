@@ -17,6 +17,7 @@ type CPU6502 struct {
 	addrRel uint16
 	opcode  uint8
 	cycles  uint8
+	stall   uint16
 
 	// Lookups
 	lookupOpcodes []instruction
@@ -48,6 +49,11 @@ func (c *CPU6502) Reset() {
 }
 
 func (c *CPU6502) Clock() {
+	if c.stall > 0 {
+		c.stall--
+		return
+	}
+
 	if c.cycles == 0 {
 		c.opcode = c.read(c.pc)
 		c.pc++
@@ -77,4 +83,11 @@ func (c *CPU6502) fetch() uint8 {
 		c.fetched = c.read(c.addrAbs)
 	}
 	return c.fetched
+}
+
+func (c *CPU6502) DMAMode() {
+	c.stall += 513
+	if c.cycles%2 == 1 {
+		c.stall++
+	}
 }
