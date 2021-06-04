@@ -1,6 +1,7 @@
 package cpu
 
 import (
+	"fmt"
 	"github.com/mtojek/nes-emulator/bus"
 )
 
@@ -51,6 +52,10 @@ func (c *CPU6502) Clock() {
 	if c.cycles == 0 {
 		c.opcode = c.read(c.pc)
 		c.pc++
+
+		if c.pc == 0xDBB6 {
+			fmt.Println(1)
+		}
 
 		ins := c.lookupOpcodes[c.opcode]
 		//fmt.Printf("%s (%02x) %s\n", ins.name, c.opcode, ins.addressing.name)

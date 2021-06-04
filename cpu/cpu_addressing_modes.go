@@ -96,10 +96,10 @@ func (c *CPU6502) ind() uint8 {
 	ptrHi := uint16(c.read(c.pc)) << 8
 	c.pc++
 
-	ptr := ptrHi + ptrLo
+	ptr := ptrHi | ptrLo
 
 	if ptrLo == 0x00FF { // Simulate page boundary hardware bug
-		c.addrAbs = (uint16(c.read(ptr&0x00FF)) << 8) | uint16(c.read(ptr))
+		c.addrAbs = (uint16(c.read(ptr&0xFF00)) << 8) | uint16(c.read(ptr))
 		return 0
 	}
 
@@ -115,20 +115,21 @@ func (c *CPU6502) izx() uint8 {
 
 	lo := uint16(c.read((t + uint16(c.x)) & 0x00FF))
 	hi := uint16(c.read((t+uint16(c.x)+1)&0x00FF)) << 8
-	c.addrAbs = hi + lo
+	c.addrAbs = hi | lo
 	return 0
 }
 
 // Indirect addressing of the zero-page with Y offset
 func (c *CPU6502) izy() uint8 {
-	t := uint16(c.read(c.pc))
+	address := uint16(c.read(c.pc))
 	c.pc++
 
-	lo := uint16(c.read(t & 0x00FF))
-	hi := uint16(c.read((t+1)&0x00FF)) << 8
-	c.addrAbs = hi + lo + uint16(c.y)
-
-	if c.addrAbs&0xFF00 != hi {
+	a := address
+	b := (a & 0xFF00) | uint16(byte(a)+1)
+	lo := c.read(a)
+	hi := c.read(b)
+	c.addrAbs = (uint16(hi)<<8 | uint16(lo)) + uint16(c.y)
+	if (c.addrAbs-uint16(c.y))&0xFF00 != c.addrAbs&0xFF00 {
 		return 1
 	}
 	return 0
