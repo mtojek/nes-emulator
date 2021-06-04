@@ -20,6 +20,7 @@ type PPU2C02 struct {
 	nametable [2][1024]uint8
 	patterns  [2][4096]uint8
 	palette   [32]uint8
+	oamData   [256]byte
 
 	background *image.RGBA
 
@@ -113,6 +114,7 @@ func (cbc *cpuBusConnector) Read(addr uint16) uint8 {
 		return cbc.ppu.readStatus()
 	case 0x2003: // OAM Address
 	case 0x2004: // OAM Data
+		return cbc.ppu.readOAMData()
 	case 0x2005: // Scroll - Not Readable
 	case 0x2006: // PPU Address - Not Readable
 	case 0x2007: // PPU Data
@@ -132,14 +134,18 @@ func (cbc *cpuBusConnector) Write(addr uint16, data uint8) {
 	case 0x2001: // Mask
 		cbc.ppu.writeMask(data)
 	case 0x2002: // Status
-	case 0x2003: // OAM Address
-	case 0x2004: // OAM Data
+	case 0x2003:
+		cbc.ppu.writeOAMAddress(data)
+	case 0x2004:
+		cbc.ppu.writeOAMData(data)
 	case 0x2005: // Scroll
 		cbc.ppu.writeScroll(data)
 	case 0x2006: // PPU Address
 		cbc.ppu.writeAddress(data)
 	case 0x2007: // PPU Data
 		cbc.ppu.writeData(data)
+	case 0x4014:
+		cbc.ppu.writeDMA(data)
 	}
 }
 
@@ -315,7 +321,6 @@ func (ppu *PPU2C02) renderPixel() {
 		background = 0
 	}
 	b := background%4 != 0
-
 
 	// TODO sprite zero hit
 	if !b {
@@ -664,4 +669,35 @@ func (ppu *PPU2C02) readPalette(address uint16) byte {
 		address -= 16
 	}
 	return ppu.palette[address]
+}
+
+// $2003: OAMADDR
+func (ppu *PPU2C02) writeOAMAddress(value byte) {
+	ppu.oamAddress = value
+}
+
+// $2004: OAMDATA (read)
+func (ppu *PPU2C02) readOAMData() byte {
+	return ppu.oamData[ppu.oamAddress]
+}
+
+// $2004: OAMDATA (write)
+func (ppu *PPU2C02) writeOAMData(value byte) {
+	ppu.oamData[ppu.oamAddress] = value
+	ppu.oamAddress++
+}
+
+// $4014: OAMDMA
+func (ppu *PPU2C02) writeDMA(value byte) {
+	cpu := ppu.console.CPU
+	address := uint16(value) << 8
+	for i := 0; i < 256; i++ {
+		ppu.oamData[ppu.oamAddress] = cpu.Read(address)
+		ppu.oamAddress++
+		address++
+	}
+	cpu.stall += 513
+	if cpu.Cycles%2 == 1 {
+		cpu.stall++
+	}
 }

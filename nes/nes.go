@@ -44,6 +44,7 @@ func Create() *NES {
 
 	cpuBusConnector := aPPU.CPUBusConnector()
 	cpuBus.Connect(0x2000, 0x3FFF, memory.CreateMirroring(cpuBusConnector, 0x2000, 0x07))
+	cpuBus.Connect(0x4014, 0x4014, cpuBusConnector) // DMA
 
 	ppuBusConnector := aPPU.PPUBusConnector()
 	ppuBus.Connect(0x2000, 0x3EFF, memory.CreateMirroring(ppuBusConnector, 0x2000, 0x0FFF))
