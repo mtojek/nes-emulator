@@ -12,7 +12,7 @@ import (
 	"github.com/mtojek/nes-emulator/ui"
 )
 
-var keysPlayer2 [8]bool // TODO: unimplemented
+var keysPlayer2 = [8]bool{false, false, false, false, false, false, false, false} // TODO: unimplemented
 
 func main() {
 	flag.Parse()

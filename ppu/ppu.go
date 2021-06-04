@@ -316,6 +316,8 @@ func (ppu *PPU2C02) renderPixel() {
 	}
 	b := background%4 != 0
 
+
+	// TODO sprite zero hit
 	if !b {
 		color = 0
 	} else if b {

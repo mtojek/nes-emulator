@@ -1,6 +1,8 @@
 package controller
 
-import "github.com/mtojek/nes-emulator/bus"
+import (
+	"github.com/mtojek/nes-emulator/bus"
+)
 
 const (
 	ButtonA = iota
