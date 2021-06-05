@@ -8,8 +8,8 @@ import (
 
 func ReadKeysPlayer1(window *glfw.Window) [8]bool {
 	var result [8]bool
-	result[controller.ButtonA] = readKey(window, glfw.KeyZ)
-	result[controller.ButtonB] = readKey(window, glfw.KeyX)
+	result[controller.ButtonB] = readKey(window, glfw.KeyZ)
+	result[controller.ButtonA] = readKey(window, glfw.KeyX)
 	result[controller.ButtonSelect] = readKey(window, glfw.KeyRightShift)
 	result[controller.ButtonStart] = readKey(window, glfw.KeyEnter)
 	result[controller.ButtonUp] = readKey(window, glfw.KeyUp)

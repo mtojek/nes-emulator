@@ -54,10 +54,10 @@ func main() {
 		ui.Redraw(window, tex, console.Buffer())
 
 		processingDuration := time.Now().Sub(startFrameTime)
-		waitingTime := time.Second/30 - processingDuration // FIXME timing
+		waitingTime := time.Second/60 - processingDuration
 
 		if waitingTime > 0 {
-			fmt.Printf("Sleep for: %v\n", waitingTime)
+			//fmt.Printf("Sleep for: %v\n", waitingTime)
 			time.Sleep(waitingTime)
 		}
 	}

@@ -45,6 +45,13 @@ type PPU2C02 struct {
 	highTileByte       byte
 	tileData           uint64
 
+	// sprite temporary variables
+	spriteCount      int
+	spritePatterns   [8]uint32
+	spritePositions  [8]byte
+	spritePriorities [8]byte
+	spriteIndexes    [8]byte
+
 	// $2000 PPUCTRL
 	flagNameTable       byte // 0: $2000; 1: $2400; 2: $2800; 3: $2C00
 	flagIncrement       byte // 0: add 1; 1: add 32
@@ -322,19 +329,31 @@ func (ppu *PPU2C02) renderPixel() {
 	x := int(ppu.cycle - 1)
 	y := int(ppu.scanline)
 	background := ppu.backgroundPixel()
-
-	var color byte
-
+	i, sprite := ppu.spritePixel()
 	if x < 8 && ppu.flagShowLeftBackground == 0 {
 		background = 0
 	}
+	if x < 8 && ppu.flagShowLeftSprites == 0 {
+		sprite = 0
+	}
 	b := background%4 != 0
-
-	// TODO sprite zero hit
-	if !b {
+	s := sprite%4 != 0
+	var color byte
+	if !b && !s {
 		color = 0
-	} else if b {
+	} else if !b && s {
+		color = sprite | 0x10
+	} else if b && !s {
 		color = background
+	} else {
+		if ppu.spriteIndexes[i] == 0 && x < 255 {
+			ppu.flagSpriteZeroHit = 1
+		}
+		if ppu.spritePriorities[i] == 0 {
+			color = sprite | 0x10
+		} else {
+			color = background
+		}
 	}
 
 	c := nesPalette[ppu.readPalette(uint16(color))%64]
@@ -347,6 +366,26 @@ func (ppu *PPU2C02) backgroundPixel() byte {
 	}
 	data := ppu.fetchTileData() >> ((7 - ppu.x) * 4)
 	return byte(data & 0x0F)
+}
+
+
+func (ppu *PPU2C02) spritePixel() (byte, byte) {
+	if ppu.flagShowSprites == 0 {
+		return 0, 0
+	}
+	for i := 0; i < ppu.spriteCount; i++ {
+		offset := (ppu.cycle - 1) - uint16(ppu.spritePositions[i])
+		if offset < 0 || offset > 7 {
+			continue
+		}
+		offset = 7 - offset
+		color := byte((ppu.spritePatterns[i] >> byte(offset*4)) & 0x0F)
+		if color%4 == 0 {
+			continue
+		}
+		return byte(i), color
+	}
+	return 0, 0
 }
 
 func (ppu *PPU2C02) fetchTileData() uint32 {
@@ -401,21 +440,103 @@ func (ppu *PPU2C02) Clock() {
 		}
 	}
 
-	// TODO sprite logic
+	// sprite logic
+	if renderingEnabled {
+		if ppu.cycle == 257 {
+			if visibleLine {
+				ppu.evaluateSprites()
+			} else {
+				ppu.spriteCount = 0
+			}
+		}
+	}
 
 	// vblank logic
 	if ppu.scanline == 241 && ppu.cycle == 1 {
 		ppu.setVerticalBlank()
+		ppu.frameComplete = true
 	}
 	if preLine && ppu.cycle == 1 {
 		ppu.clearVerticalBlank()
 		ppu.flagSpriteZeroHit = 0
 		ppu.flagSpriteOverflow = 0
 	}
+}
 
-	if preLine && ppu.cycle == 340 {
-		ppu.frameComplete = true
+func (ppu *PPU2C02) evaluateSprites() {
+	var h int16
+	if ppu.flagSpriteSize == 0 {
+		h = 8
+	} else {
+		h = 16
 	}
+	count := 0
+	for i := 0; i < 64; i++ {
+		y := ppu.oamData[i*4+0]
+		a := ppu.oamData[i*4+2]
+		x := ppu.oamData[i*4+3]
+		row := ppu.scanline - int16(y)
+		if row < 0 || row >= h {
+			continue
+		}
+		if count < 8 {
+			ppu.spritePatterns[count] = ppu.fetchSpritePattern(i, row)
+			ppu.spritePositions[count] = x
+			ppu.spritePriorities[count] = (a >> 5) & 1
+			ppu.spriteIndexes[count] = byte(i)
+		}
+		count++
+	}
+	if count > 8 {
+		count = 8
+		ppu.flagSpriteOverflow = 1
+	}
+	ppu.spriteCount = count
+}
+
+func (ppu *PPU2C02) fetchSpritePattern(i int, row int16) uint32 {
+	tile := ppu.oamData[i*4+1]
+	attributes := ppu.oamData[i*4+2]
+	var address uint16
+	if ppu.flagSpriteSize == 0 {
+		if attributes&0x80 == 0x80 {
+			row = 7 - row
+		}
+		table := ppu.flagSpriteTable
+		address = 0x1000*uint16(table) + uint16(tile)*16 + uint16(row)
+	} else {
+		if attributes&0x80 == 0x80 {
+			row = 15 - row
+		}
+		table := tile & 1
+		tile &= 0xFE
+		if row > 7 {
+			tile++
+			row -= 8
+		}
+		address = 0x1000*uint16(table) + uint16(tile)*16 + uint16(row)
+	}
+	a := (attributes & 3) << 2
+	lowTileByte := ppu.ppuBus.Read(address)
+	highTileByte := ppu.ppuBus.Read(address + 8)
+	var data uint32
+	for i := 0; i < 8; i++ {
+		var p1, p2 byte
+		if attributes&0x40 == 0x40 {
+			p1 = (lowTileByte & 1) << 0
+			p2 = (highTileByte & 1) << 1
+			lowTileByte >>= 1
+			highTileByte >>= 1
+		} else {
+			p1 = (lowTileByte & 0x80) >> 7
+			p2 = (highTileByte & 0x80) >> 6
+			lowTileByte <<= 1
+			highTileByte <<= 1
+		}
+		data <<= 4
+		data |= uint32(a | p1 | p2)
+	}
+	return data
 }
 
 func (p *PPU2C02) CPUBusConnector() bus.ReadableWriteable {
