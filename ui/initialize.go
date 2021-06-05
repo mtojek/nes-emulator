@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	windowSizeX = 256
-	windowSizeY = 240
+	windowSizeX = 512
+	windowSizeY = 480
 )
 
 func init() {
