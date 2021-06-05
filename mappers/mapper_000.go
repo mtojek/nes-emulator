@@ -17,13 +17,13 @@ func (m mapper000) ConnectTo(cpuBus *bus.Bus, ppuBus *bus.Bus, prgMemory bus.Rea
 	ppuBus.Connect(0x0000, 0x1FFF, chrMemory)
 }
 
-func (m mapper000) MapCPU(addr uint16) uint16 {
+func (m mapper000) MapCPU(addr uint16) uint64 {
 	if m.nPRGBanks > 1 {
-		return addr & 0x7FFF
+		return uint64(addr & 0x7FFF)
 	}
-	return addr & 0x3FFF
+	return uint64(addr & 0x3FFF)
 }
 
-func (m mapper000) MapPPU(addr uint16) uint16 {
-	return addr
+func (m mapper000) MapPPU(addr uint16) uint64 {
+	return uint64(addr)
 }

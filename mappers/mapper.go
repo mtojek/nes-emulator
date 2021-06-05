@@ -10,8 +10,8 @@ type Mapper interface {
 	ID() uint8
 
 	ConnectTo(cpuBus *bus.Bus, ppuBus *bus.Bus, prgMemory bus.ReadableWriteable, chrMemory bus.ReadableWriteable)
-	MapCPU(addr uint16) uint16
-	MapPPU(addr uint16) uint16
+	MapCPU(addr uint16) uint64
+	MapPPU(addr uint16) uint64
 }
 
 func Load(mapperID uint8, nPRGBanks uint8) (Mapper, error) {

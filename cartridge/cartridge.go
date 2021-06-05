@@ -46,7 +46,7 @@ func (mh *prgMemoryHandler) Write(addr uint16, data uint8) {
 
 func (mh *chrMemoryHandler) Read(addr uint16) uint8 {
 	mapped := mh.c.mapper.MapPPU(addr)
-	if uint16(len(mh.c.vCHRMemory)) < mapped {
+	if uint64(len(mh.c.vCHRMemory)) < mapped {
 		fmt.Println("BUG read: should be handled by memory not cart")
 		return 0
 	} else if len(mh.c.vCHRMemory) == 0 {
@@ -59,7 +59,7 @@ func (mh *chrMemoryHandler) Read(addr uint16) uint8 {
 func (mh *chrMemoryHandler) Write(addr uint16, data uint8) {
 	mapped := mh.c.mapper.MapPPU(addr)
 
-	if uint16(len(mh.c.vCHRMemory)) < mapped {
+	if uint64(len(mh.c.vCHRMemory)) < mapped {
 		fmt.Println("BUG write: should be handled by memory not cart")
 		return
 	} else if len(mh.c.vCHRMemory) == 0 {

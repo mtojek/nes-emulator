@@ -19,17 +19,17 @@ func (m mapper002) ConnectTo(cpuBus *bus.Bus, ppuBus *bus.Bus, prgMemory bus.Rea
 	ppuBus.Connect(0x0000, 0x1FFF, chrMemory)
 }
 
-func (m mapper002) MapCPU(addr uint16) uint16 {
+func (m mapper002) MapCPU(addr uint16) uint64 {
 	if addr >= 0xC000 {
-		offset := int(m.prgBank2)*0x4000 + (int(addr) - 0xC000) // FIXME This must be able to return data from larger memory banks
-		return uint16(offset)
+		offset := uint64(m.prgBank2)*0x4000 + (uint64(addr) - 0xC000)
+		return offset
 	}
 	if addr >= 0x8000 {
-		return uint16(m.prgBank1)*0x4000 + (addr - 0x8000)
+		return uint64(m.prgBank1)*0x4000 + (uint64(addr) - 0x8000)
 	}
 	panic("range not implemented")
 }
 
-func (m mapper002) MapPPU(addr uint16) uint16 {
-	return addr
+func (m mapper002) MapPPU(addr uint16) uint64 {
+	return uint64(addr)
 }
