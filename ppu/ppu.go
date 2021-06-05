@@ -22,6 +22,7 @@ type PPU2C02 struct {
 	palette   [32]uint8
 	oamData   [256]byte
 
+	foreground *image.RGBA
 	background *image.RGBA
 
 	frameComplete bool
@@ -281,10 +282,11 @@ var _ bus.ReadableWriteable = new(cpuBusConnector)
 
 func Create(cpuBus, ppuBus bus.ReadableWriteable, dmaModer dmaModer) *PPU2C02 {
 	return &PPU2C02{
-		cpuBus: cpuBus,
-		ppuBus: ppuBus,
+		cpuBus:  cpuBus,
+		ppuBus:  ppuBus,
 		dmaMode: dmaModer,
 
+		foreground: image.NewRGBA(image.Rect(0, 0, 256, 240)),
 		background: image.NewRGBA(image.Rect(0, 0, 256, 240)),
 	}
 }
@@ -338,26 +340,26 @@ func (ppu *PPU2C02) renderPixel() {
 	}
 	b := background%4 != 0
 	s := sprite%4 != 0
-	var color byte
+	var c byte
 	if !b && !s {
-		color = 0
+		c = 0
 	} else if !b && s {
-		color = sprite | 0x10
+		c = sprite | 0x10
 	} else if b && !s {
-		color = background
+		c = background
 	} else {
 		if ppu.spriteIndexes[i] == 0 && x < 255 {
 			ppu.flagSpriteZeroHit = 1
 		}
 		if ppu.spritePriorities[i] == 0 {
-			color = sprite | 0x10
+			c = sprite | 0x10
 		} else {
-			color = background
+			c = background
 		}
 	}
 
-	c := nesPalette[ppu.readPalette(uint16(color))%64]
-	ppu.background.SetRGBA(x, y, c)
+	px := nesPalette[ppu.readPalette(uint16(c))%64]
+	ppu.background.SetRGBA(x, y, px)
 }
 
 func (ppu *PPU2C02) backgroundPixel() byte {
@@ -367,7 +369,6 @@ func (ppu *PPU2C02) backgroundPixel() byte {
 	data := ppu.fetchTileData() >> ((7 - ppu.x) * 4)
 	return byte(data & 0x0F)
 }
-
 
 func (ppu *PPU2C02) spritePixel() (byte, byte) {
 	if ppu.flagShowSprites == 0 {
@@ -379,11 +380,11 @@ func (ppu *PPU2C02) spritePixel() (byte, byte) {
 			continue
 		}
 		offset = 7 - offset
-		color := byte((ppu.spritePatterns[i] >> byte(offset*4)) & 0x0F)
-		if color%4 == 0 {
+		c := byte((ppu.spritePatterns[i] >> byte(offset*4)) & 0x0F)
+		if c%4 == 0 {
 			continue
 		}
-		return byte(i), color
+		return byte(i), c
 	}
 	return 0, 0
 }
@@ -453,6 +454,7 @@ func (ppu *PPU2C02) Clock() {
 
 	// vblank logic
 	if ppu.scanline == 241 && ppu.cycle == 1 {
+		ppu.foreground, ppu.background = ppu.background, ppu.foreground
 		ppu.setVerticalBlank()
 		ppu.frameComplete = true
 	}
@@ -743,8 +745,7 @@ func (ppu *PPU2C02) clearVerticalBlank() {
 func (ppu *PPU2C02) nmiChange() {
 	nmi := ppu.nmiOutput && ppu.nmiOccurred
 	if nmi && !ppu.nmiPrevious {
-		// TODO: this fixes some games but the delay shouldn't have to be so
-		// long, so the timings are off somewhere
+		// TODO: this fixes some games but the delay shouldn't have to be so long, so the timings are off somewhere
 		ppu.nmiDelay = 15
 	}
 	ppu.nmiPrevious = nmi
