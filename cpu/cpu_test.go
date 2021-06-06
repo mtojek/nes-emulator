@@ -52,6 +52,7 @@ func TestCPU_BasicCode(t *testing.T) {
 	setResetVector(&cpuBus, standardCodeLocation)
 
 	c := cpu.Create(&cpuBus)
+	c.Reset()
 
 	// when
 	for i := 0; i < basicCodeCyclesLimit; i++ {
