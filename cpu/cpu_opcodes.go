@@ -605,7 +605,7 @@ func (c *CPU6502) tya() uint8 {
 
 // Unknown instruction
 func (c *CPU6502) xxx() uint8 {
-	fmt.Printf("unknown instruction: %02X, pc: %04x\n", c.opcode, c.pc)
+	panic(fmt.Sprintf("unknown instruction: %02X, pc: %04x\n", c.opcode, c.pc))
 	return 0
 }
 

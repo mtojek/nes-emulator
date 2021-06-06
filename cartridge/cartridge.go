@@ -2,7 +2,6 @@ package cartridge
 
 import (
 	"encoding/binary"
-	"fmt"
 	"io"
 	"os"
 
@@ -35,35 +34,33 @@ type chrMemoryHandler struct {
 var _ bus.ReadableWriteable = new(chrMemoryHandler)
 
 func (mh *prgMemoryHandler) Read(addr uint16) uint8 {
-	mapped := mh.c.mapper.MapCPU(addr)
+	mapped, handled := mh.c.mapper.CPURead(addr)
+	if handled {
+		return 0
+	}
 	return mh.c.vPRGMemory[mapped]
 }
 
 func (mh *prgMemoryHandler) Write(addr uint16, data uint8) {
-	mapped := mh.c.mapper.MapCPU(addr)
+	mapped, handled := mh.c.mapper.CPUWrite(addr, data)
+	if handled {
+		return
+	}
+
 	mh.c.vPRGMemory[mapped] = data
 }
 
 func (mh *chrMemoryHandler) Read(addr uint16) uint8 {
-	mapped := mh.c.mapper.MapPPU(addr)
-	if uint64(len(mh.c.vCHRMemory)) < mapped {
-		fmt.Println("BUG read: should be handled by memory not cart")
-		return 0
-	} else if len(mh.c.vCHRMemory) == 0 {
-		fmt.Println("BUG read: no CHR present")
+	mapped, handled := mh.c.mapper.PPURead(addr)
+	if handled {
 		return 0
 	}
 	return mh.c.vCHRMemory[mapped]
 }
 
 func (mh *chrMemoryHandler) Write(addr uint16, data uint8) {
-	mapped := mh.c.mapper.MapPPU(addr)
-
-	if uint64(len(mh.c.vCHRMemory)) < mapped {
-		fmt.Println("BUG write: should be handled by memory not cart")
-		return
-	} else if len(mh.c.vCHRMemory) == 0 {
-		fmt.Println("BUG write: no CHR present")
+	mapped, handled := mh.c.mapper.PPUWrite(addr, data)
+	if handled {
 		return
 	}
 	mh.c.vCHRMemory[mapped] = data
@@ -100,10 +97,16 @@ func Load(path string) (*Cartridge, error) {
 		return nil, errors.Wrap(err, "can't read prg-ROM banks")
 	}
 
+	var chr []byte
+
 	// Read CHR-ROM bank(s)
-	chr := make([]byte, int(header.CHRROMChunks)*0x2000)
-	if _, err := io.ReadFull(file, chr); err != nil {
-		return nil, errors.Wrap(err, "can't read CHR-ROM banks")
+	if header.CHRROMChunks == 0 {
+		chr = make([]byte, 8192)
+	} else {
+		chr = make([]byte, int(header.CHRROMChunks)*0x2000)
+		if _, err := io.ReadFull(file, chr); err != nil {
+			return nil, errors.Wrap(err, "can't read CHR-ROM banks")
+		}
 	}
 
 	// Configure mapper

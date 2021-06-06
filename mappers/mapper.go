@@ -10,8 +10,11 @@ type Mapper interface {
 	ID() uint8
 
 	ConnectTo(cpuBus *bus.Bus, ppuBus *bus.Bus, prgMemory bus.ReadableWriteable, chrMemory bus.ReadableWriteable)
-	MapCPU(addr uint16) uint64
-	MapPPU(addr uint16) uint64
+
+	CPURead(addr uint16) (uint64, bool)
+	CPUWrite(addr uint16, value uint8) (uint64, bool)
+	PPURead(addr uint16) (uint64, bool)
+	PPUWrite(addr uint16, value uint8) (uint64, bool)
 }
 
 func Load(mapperID uint8, nPRGBanks uint8) (Mapper, error) {
@@ -22,8 +25,8 @@ func Load(mapperID uint8, nPRGBanks uint8) (Mapper, error) {
 	} else if mapperID == 2 {
 		return &mapper002{
 			nPRGBanks: nPRGBanks,
-			prgBank1: 0,
-			prgBank2: nPRGBanks - 1,
+			prgBank1:  0,
+			prgBank2:  nPRGBanks - 1,
 		}, nil
 	}
 	return nil, fmt.Errorf("unsupported mapper: %d", mapperID)
