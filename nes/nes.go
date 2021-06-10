@@ -1,6 +1,7 @@
 package nes
 
 import (
+	"github.com/mtojek/nes-emulator/apu"
 	"github.com/mtojek/nes-emulator/controller"
 	"image"
 
@@ -32,12 +33,22 @@ func Create() *NES {
 	player1 := controller.NewController()
 	player2 := controller.NewController()
 
+	// APU
+	anAPU := apu.Create()
+
+	// 0x4017 (R: player2, W: APU)
+	addr4017 := bus.UseSameAdress(player2, anAPU)
+
+	cpuBus.Connect(0x4000, 0x4013, anAPU)
+	cpuBus.Connect(0x4015, 0x4015, anAPU)
+	cpuBus.Connect(0x4017, 0x4017, addr4017)
+
 	// CPU
 	aCPU := cpu.Create(&cpuBus)
 
 	cpuBus.Connect(0x0000, 0x1FFF, memory.CreateMirroring(memory.CreateMemory(), 0x0000, 0x07FF))
 	cpuBus.Connect(0x4016, 0x4016, player1)
-	cpuBus.Connect(0x4017, 0x4017, player2)
+	cpuBus.Connect(0x4017, 0x4017, addr4017)
 
 	// PPU
 	aPPU := ppu.Create(&cpuBus, &ppuBus, aCPU)

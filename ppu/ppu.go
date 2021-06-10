@@ -1,6 +1,7 @@
 package ppu
 
 import (
+	"fmt"
 	"github.com/mtojek/nes-emulator/bus"
 	"image"
 	"image/color"
@@ -120,8 +121,6 @@ type cpuBusConnector struct {
 
 func (cbc *cpuBusConnector) Read(addr uint16) uint8 {
 	//fmt.Printf("(implement me) read addr: %04x\n", addr)
-
-	var data uint8
 	switch addr {
 	case 0x2000: // Control - Not readable
 	case 0x2001: // Mask - Not Readable
@@ -135,7 +134,7 @@ func (cbc *cpuBusConnector) Read(addr uint16) uint8 {
 	case 0x2007: // PPU Data
 		return cbc.ppu.readData()
 	}
-	return data
+	panic(fmt.Sprintf("cpuBusConnector: read from unmapped address %04X", addr))
 }
 
 func (cbc *cpuBusConnector) Write(addr uint16, data uint8) {
