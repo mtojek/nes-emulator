@@ -2,14 +2,13 @@ package nes
 
 import (
 	"github.com/mtojek/nes-emulator/apu"
-	"github.com/mtojek/nes-emulator/controller"
-	"image"
-
 	"github.com/mtojek/nes-emulator/bus"
 	"github.com/mtojek/nes-emulator/cartridge"
+	"github.com/mtojek/nes-emulator/controller"
 	"github.com/mtojek/nes-emulator/cpu"
 	"github.com/mtojek/nes-emulator/memory"
 	"github.com/mtojek/nes-emulator/ppu"
+	"image"
 )
 
 type NES struct {
@@ -90,13 +89,10 @@ func (n *NES) Reset() {
 
 func (n *NES) Clock() {
 	n.ppu.Clock()
-	n.apu.Clock()
-
 	if n.systemClock%3 == 0 {
 		n.cpu.Clock()
+		n.apu.Clock()
 	}
-
-	// TODO: Synchronizing with audio
 
 	if n.ppu.TriggerNMI {
 		n.ppu.TriggerNMI = false
