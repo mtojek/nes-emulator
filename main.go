@@ -34,11 +34,12 @@ func main() {
 	ui.PortAudioInitialize()
 	defer ui.PortAudioTerminate()
 
-	sound, err := ui.OpenAudioStream(console.AudioBuffer())
+	sound, sampleRate, err := ui.OpenAudioStream(console.AudioBuffer())
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer sound.Close()
+	fmt.Printf("Audio sample rate: %f\n", sampleRate)
 
 	window, tex, err := ui.Initialize()
 	if err != nil {

@@ -1,6 +1,8 @@
 package ui
 
-import "github.com/gordonklaus/portaudio"
+import (
+	"github.com/gordonklaus/portaudio"
+)
 
 func PortAudioInitialize() {
 	portaudio.Initialize()
@@ -10,10 +12,10 @@ func PortAudioTerminate() {
 	portaudio.Terminate()
 }
 
-func OpenAudioStream(sampleBuffer chan float32) (*portaudio.Stream, error) {
+func OpenAudioStream(sampleBuffer chan float32) (*portaudio.Stream, float64, error) {
 	host, err := portaudio.DefaultHostApi()
 	if err != nil {
-		return nil, err
+		return nil, -1, err
 	}
 
 	parameters := portaudio.HighLatencyParameters(nil, host.DefaultOutputDevice)
@@ -32,11 +34,11 @@ func OpenAudioStream(sampleBuffer chan float32) (*portaudio.Stream, error) {
 		}
 	})
 	if err != nil {
-		return nil, err
+		return nil, -1, err
 	}
 
 	if err := stream.Start(); err != nil {
-		return nil, err
+		return nil, -1, err
 	}
-	return stream, nil
+	return stream, parameters.SampleRate, nil
 }

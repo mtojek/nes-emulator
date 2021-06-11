@@ -24,6 +24,15 @@ var dutyTable = [][]byte{
 var pulseTable [31]float32
 var tndTable [203]float32
 
+func init() {
+	for i := 0; i < 31; i++ {
+		pulseTable[i] = 95.52 / (8128.0/float32(i) + 100)
+	}
+	for i := 0; i < 203; i++ {
+		tndTable[i] = 163.67 / (24329.0/float32(i) + 100)
+	}
+}
+
 type APU2303 struct {
 	TriggerIRQ bool
 	dmcModer   dmcModer
@@ -39,6 +48,7 @@ type APU2303 struct {
 	frameValue  byte
 	frameIRQ    bool
 
+	filterChain FilterChain
 	sampleRate float64
 	cycle      uint64
 }
@@ -53,6 +63,12 @@ func Create(cpuBus bus.ReadableWriteable, dmcModer dmcModer) *APU2303 {
 	return &APU2303{
 		channel:  make(chan float32, 44100),
 		dmcModer: dmcModer,
+		sampleRate: cpuFrequency/48000,
+		filterChain: FilterChain{
+			HighPassFilter(48000, 90),
+			HighPassFilter(48000, 440),
+			LowPassFilter(48000, 14000),
+		},
 
 		pulse1:   &Pulse{
 			channel: 1,
@@ -268,9 +284,9 @@ func (apu *APU2303) fireIRQ() {
 }
 
 func (apu *APU2303) sendSample() {
-	// TODO output := apu.filterChain.Step(apu.output())
+	output := apu.filterChain.Step(apu.output())
 	select {
-	case apu.channel <- apu.output():
+	case apu.channel <- output:
 	default:
 	}
 }
