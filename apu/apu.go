@@ -63,7 +63,7 @@ func Create(cpuBus bus.ReadableWriteable, dmcModer dmcModer) *APU2303 {
 	return &APU2303{
 		channel:  make(chan float32, 44100),
 		dmcModer: dmcModer,
-		sampleRate: cpuFrequency/48000,
+		sampleRate: float64(cpuFrequency)/48000,
 		filterChain: FilterChain{
 			HighPassFilter(48000, 90),
 			HighPassFilter(48000, 440),
