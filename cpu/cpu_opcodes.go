@@ -618,3 +618,24 @@ func (c *CPU6502) branch() {
 	}
 	c.pc = c.addrAbs
 }
+
+func (c *CPU6502) IRQ() uint8 {
+	if c.getFlag(flagI) == 0 {
+		c.write(0x0100+uint16(c.sp), uint8(c.pc>>8))
+		c.sp--
+		c.write(0x0100+uint16(c.sp), uint8(c.pc))
+		c.sp--
+
+		c.setFlag(flagB, false)
+		c.setFlag(flagU, true)
+		c.setFlag(flagI, true)
+
+		c.write(0x0100+uint16(c.sp), c.status)
+		c.sp--
+
+		addr := uint16(0xFFFE)
+		c.pc = uint16(c.read(addr)) | uint16(c.read(addr+1))<<8
+		c.cycles = 7
+	}
+	return 0
+}

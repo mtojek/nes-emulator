@@ -31,6 +31,12 @@ func main() {
 	console.Insert(cart)
 	console.Reset()
 
+	sound, err := ui.OpenAudioStream(console.AudioBuffer())
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer sound.Close()
+
 	window, tex, err := ui.Initialize()
 	if err != nil {
 		log.Fatal(err)

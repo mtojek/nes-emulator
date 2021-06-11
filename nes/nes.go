@@ -18,6 +18,7 @@ type NES struct {
 	cpuBus *bus.Bus
 	ppuBus *bus.Bus
 
+	apu *apu.APU2303
 	cpu *cpu.CPU6502
 	ppu *ppu.PPU2C02
 
@@ -33,8 +34,16 @@ func Create() *NES {
 	player1 := controller.NewController()
 	player2 := controller.NewController()
 
+	// CPU
+	aCPU := cpu.Create(&cpuBus)
+
 	// APU
-	anAPU := apu.Create()
+	anAPU := apu.Create(&cpuBus, aCPU)
+
+	// PPU
+	aPPU := ppu.Create(&cpuBus, &ppuBus, aCPU)
+
+	// Wiring
 
 	// 0x4017 (R: player2, W: APU)
 	addr4017 := bus.UseSameAdress(player2, anAPU)
@@ -43,15 +52,9 @@ func Create() *NES {
 	cpuBus.Connect(0x4015, 0x4015, anAPU)
 	cpuBus.Connect(0x4017, 0x4017, addr4017)
 
-	// CPU
-	aCPU := cpu.Create(&cpuBus)
-
 	cpuBus.Connect(0x0000, 0x1FFF, memory.CreateMirroring(memory.CreateMemory(), 0x0000, 0x07FF))
 	cpuBus.Connect(0x4016, 0x4016, player1)
 	cpuBus.Connect(0x4017, 0x4017, addr4017)
-
-	// PPU
-	aPPU := ppu.Create(&cpuBus, &ppuBus, aCPU)
 
 	cpuBusConnector := aPPU.CPUBusConnector()
 	cpuBus.Connect(0x2000, 0x3FFF, memory.CreateMirroring(cpuBusConnector, 0x2000, 0x07))
@@ -86,16 +89,23 @@ func (n *NES) Reset() {
 
 func (n *NES) Clock() {
 	n.ppu.Clock()
+	n.apu.Clock()
 
 	if n.systemClock%3 == 0 {
 		n.cpu.Clock()
 	}
+
+	// TODO: Synchronizing with audio
 
 	if n.ppu.TriggerNMI {
 		n.ppu.TriggerNMI = false
 		n.cpu.NMI()
 	}
 
+	if n.apu.TriggerIRQ {
+		n.apu.TriggerIRQ = false
+		n.cpu.IRQ()
+	}
 	n.systemClock++
 }
 
@@ -114,4 +124,8 @@ func (n *NES) Buffer() *image.RGBA {
 func (n *NES) UpdateControllers(state1, state2 [8]bool) {
 	n.player1.SetState(state1)
 	n.player2.SetState(state2)
+}
+
+func (n *NES) AudioBuffer() chan float32 {
+	return n.apu.AudioBuffer()
 }

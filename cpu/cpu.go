@@ -91,3 +91,7 @@ func (c *CPU6502) DMAMode() {
 		c.stall++
 	}
 }
+
+func (c *CPU6502) DMCMode() {
+	c.stall += 4
+}
