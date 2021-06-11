@@ -66,6 +66,7 @@ func Create(cpuBus bus.ReadableWriteable, dmcModer dmcModer) *APU2303 {
 		triangle: new(Triangle),
 		dmc: &DMC{
 			cpuBus: cpuBus,
+			dmcModer: dmcModer,
 		},
 	}
 }

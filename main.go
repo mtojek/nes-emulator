@@ -31,6 +31,9 @@ func main() {
 	console.Insert(cart)
 	console.Reset()
 
+	ui.PortAudioInitialize()
+	defer ui.PortAudioTerminate()
+
 	sound, err := ui.OpenAudioStream(console.AudioBuffer())
 	if err != nil {
 		log.Fatal(err)

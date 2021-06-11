@@ -2,6 +2,14 @@ package ui
 
 import "github.com/gordonklaus/portaudio"
 
+func PortAudioInitialize() {
+	portaudio.Initialize()
+}
+
+func PortAudioTerminate() {
+	portaudio.Terminate()
+}
+
 func OpenAudioStream(sampleBuffer chan float32) (*portaudio.Stream, error) {
 	host, err := portaudio.DefaultHostApi()
 	if err != nil {

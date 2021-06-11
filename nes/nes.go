@@ -68,6 +68,7 @@ func Create() *NES {
 		cpuBus: &cpuBus,
 		ppuBus: &ppuBus,
 
+		apu: anAPU,
 		cpu: aCPU,
 		ppu: aPPU,
 
