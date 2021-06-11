@@ -64,7 +64,7 @@ func main() {
 		ui.Redraw(window, tex, console.Buffer())
 
 		processingDuration := time.Now().Sub(startFrameTime)
-		waitingTime := time.Second/60 - processingDuration
+		waitingTime := time.Second/65 - processingDuration
 
 		if waitingTime > 0 {
 			//fmt.Printf("Sleep for: %v\n", waitingTime)
